@@ -63,16 +63,29 @@ Under **Register → Företagsuppgifter** kan du låsa bokföringen till och med
 
 ## Backup
 
-Varje start tar en kopia av databasen till `OneDrive\bitero-erp-backups\` (de 30 senaste sparas). Nya bilagor
-kopieras till `bitero-erp-backups\bilagor\`. Själva bilagorna ligger i `bitero-erp-data\bilagor\`.
-Manuellt: `uv run python manage.py backup`. Vill du ha kopiorna någon annanstans: sätt `BITERO_BACKUP_DIR`.
+Varje start tar en **krypterad** kopia av databasen till `OneDrive\bitero-erp-backups\` (de 30 senaste sparas).
+Nya bilagor krypteras till `bitero-erp-backups\bilagor-krypterade\`. Själva bilagorna ligger i
+`bitero-erp-data\bilagor\`. Manuellt: `uv run python manage.py backup`. Annan plats: sätt `BITERO_BACKUP_DIR`.
+
+**Backupnyckeln** visas första gången du startar. Spara den i din lösenordshanterare. Visa den igen med
+`uv run python manage.py backupnyckel`. På en ny dator anger du den med `... backupnyckel --ange <nyckel>`.
+
+**Extern kopia en gång i månaden:** anslut en USB-disk och kör `extern-kopia.bat`. Förvara disken skilt från
+datorn. Programmet påminner när det gått mer än 35 dagar.
 
 **Databasen ligger utanför OneDrive**, i `C:\Users\<du>\bitero-erp-data\konsultsystem.sqlite3`,
 eftersom SQLite kan skadas om OneDrive synkar filen medan programmet kör. Kopiorna är stängda filer och
 kan synkas utan risk. Vill du ha databasen någon annanstans: sätt `BITERO_DATA_DIR`.
 
-**Återställa en backup:** stäng programmet och kopiera önskad fil från `bitero-erp-backups\` till
-`bitero-erp-data\konsultsystem.sqlite3`. Ta bort eventuella `-wal`/`-shm`-filer bredvid den.
+**Återställa en backup:** stäng programmet och kör
+`uv run python manage.py dekryptera "%OneDrive%\bitero-erp-backups\konsultsystem_<datum>.sqlite3.krypterad"`.
+Kopiera sedan den dekrypterade filen från `bitero-erp-data\dekrypterat\` till
+`bitero-erp-data\konsultsystem.sqlite3` och ta bort eventuella `-wal`/`-shm`-filer bredvid den.
+Bilagorna: `... dekryptera "%OneDrive%\bitero-erp-backups\bilagor-krypterade" --till "%USERPROFILE%\bitero-erp-data\bilagor"`.
+
+**Kontroller vid start:** programmet kontrollerar databasen, behandlingshistoriken, att alla verifikationer
+balanserar, säkerhetskopian, den externa kopian och att programfilerna inte ändrats lokalt. Problem visas i
+fönstret och överst på varje sida. Har du ändrat i koden lokalt: `git checkout .` återgår till GitHub-versionen.
 
 ## Versionshantering (git och GitHub)
 

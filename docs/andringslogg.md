@@ -3,6 +3,19 @@
 Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
 fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
 
+## 2026.10.31-6
+
+- **Krypterade säkerhetskopior** (AES-256-GCM) av databas, bilagor och årsarkiv. Befintliga okrypterade
+  kopior i OneDrive krypteras och tas bort vid första start. Nyckeln visas en gång och sparas i
+  lösenordshanteraren. Nya kommandon: `backupnyckel` och `dekryptera`.
+- **Extern kopia** till USB-disk med `extern-kopia.bat`, med påminnelse efter 35 dagar.
+- **Kontroller vid varje start:** databasens integritet, hashkedjan, balans per verifikation, att
+  säkerhetskopian går att läsa, extern kopia och lokala ändringar i programfilerna. Fel visas även i webbläsaren.
+- Felloggen omfattar nu även varningar, säkerhetshändelser och webbservern.
+- Inloggningen gäller i sju dagar (tidigare 14).
+- GitHub kör statisk kodanalys (ruff) och kräver minst 75 % testtäckning. Några små fel som ruff hittade är
+  rättade (oanvända variabler och importer, explicit fältlista i formuläret för anställda).
+
 ## 2026.10.31-5
 
 - **Claude-koppling (MCP):** Claude i skrivbordsappen kan läsa kvitton i inkorgen, söka leverantörer och

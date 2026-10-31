@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -14,8 +14,15 @@ from django.views.decorators.http import require_POST
 from register.models import Foretag, Konto, Kund
 
 from . import fakturadokument
-from .forms import (BetaldForm, FakturaHuvudForm, FakturaradFormSet, FaktureraTidForm, TidcellForm,
-                    TidpostForm, UppdragForm)
+from .forms import (
+    BetaldForm,
+    FakturaHuvudForm,
+    FakturaradFormSet,
+    FaktureraTidForm,
+    TidcellForm,
+    TidpostForm,
+    UppdragForm,
+)
 from .models import Faktura, Fakturarad, Tidpost, Uppdrag, avrunda
 
 ENHET_TEXT = {"HUR": "tim", "PCE": "st", "DAY": "dag", "MON": "mån"}
@@ -24,7 +31,6 @@ ENHET_TEXT = {"HUR": "tim", "PCE": "st", "DAY": "dag", "MON": "mån"}
 # ---------------------------------------------------------------- översikt
 
 from .oversikt import oversikt  # noqa: E402,F401
-
 
 # ---------------------------------------------------------------- tidrapport
 

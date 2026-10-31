@@ -117,7 +117,7 @@ def utdelning(idag, agarandel=None, egen_lon=None):
 
 def _prognos_loner_rest(idag):
     """Resten av årets löner, uppskattat som senaste bokförda lönemånaden × återstående månader."""
-    from planering.likviditet import lon_bokford, _manad
+    from planering.likviditet import _manad, lon_bokford
     m_ar, m = idag.year, idag.month
     for _ in range(4):
         if lon_bokford(m_ar, m):

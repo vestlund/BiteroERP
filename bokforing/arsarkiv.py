@@ -247,9 +247,10 @@ def skapa(ar):
 
 
 def spara_kopia(filnamn, data):
-    """Sparar en kopia bland säkerhetskopiorna (OneDrive), så att arkivet finns utanför datorn."""
-    mapp = settings.BACKUP_DIR / "arsarkiv"
-    mapp.mkdir(parents=True, exist_ok=True)
-    (mapp / filnamn).write_bytes(data)
-    return mapp / filnamn
+    """Sparar en krypterad kopia bland säkerhetskopiorna (OneDrive), så att arkivet finns utanför datorn.
+
+    Läses med `uv run python manage.py dekryptera <fil>` och backupnyckeln."""
+    from config import kryptering
+
+    return kryptering.skriv_krypterad(settings.BACKUP_DIR / "arsarkiv" / (filnamn + kryptering.ANDELSE), data)
 

@@ -22,7 +22,7 @@ Bitero ERP är ett lokalt affärssystem som körs på företagets bärbara dator
 | Program | Python och Django, med webbservern waitress. Fel loggas i `bitero-erp-data\fel.log`. Källkoden ligger i `C:\kod\bitero-erp` och versionshanteras med git i ett privat GitHub-repo. |
 | Databas | SQLite-fil `konsultsystem.sqlite3` i `%USERPROFILE%\bitero-erp-data`, utanför OneDrive. |
 | Bilagor | Underlag (PDF, bilder) i `bitero-erp-data\bilagor\ÅÅÅÅ\MM\`. |
-| Säkerhetskopior | Tas automatiskt vid varje start till `OneDrive\bitero-erp-backups\`. |
+| Säkerhetskopior | Krypterade, tas automatiskt vid varje start till `OneDrive\bitero-erp-backups\`. Månadsvis kopia till extern disk. |
 
 ### Delsystem
 
@@ -224,9 +224,17 @@ Från en verifikation finns länkar till faktura, bilaga, bankpost och rättelse
 - **Lagring:** databasen och bilagorna finns på datorns disk utanför OneDrive. Disken ska vara krypterad
   (BitLocker), eftersom den innehåller lönedata och personnummer.
 - **Säkerhetskopior:** vid varje start kopieras databasen till `OneDrive\bitero-erp-backups\` (de 30 senaste
-  sparas). Bilagor speglas till `bitero-erp-backups\bilagor\` och raderas aldrig där. Mappen synkas via OneDrive,
-  så en kopia finns utanför datorn. Källkoden finns dessutom i GitHub.
-  Prova att återläsa en kopia minst en gång per år.
+  sparas). Bilagor speglas till `bitero-erp-backups\bilagor-krypterade\` och raderas aldrig där. Mappen synkas
+  via OneDrive, så en kopia finns utanför datorn. Källkoden finns dessutom i GitHub.
+  - **Kryptering:** alla kopior (databas, bilagor och årsarkiv) krypteras med AES-256-GCM. Nyckeln ligger i
+    `bitero-erp-data\backupnyckel.txt` (inte i OneDrive) och ska också finnas i ägarens lösenordshanterare.
+    Utan nyckeln går kopiorna inte att läsa. Ändras en krypterad fil upptäcks det när den läses.
+  - **Extern kopia:** en gång i månaden körs `extern-kopia.bat`, som kopierar de krypterade kopiorna till en
+    USB-disk som förvaras skilt från datorn (skydd mot ransomware och misstag som synkas via OneDrive).
+    Kopian kontrolleras direkt efter kopieringen.
+  - **Återläsning:** `uv run python manage.py dekryptera <fil eller mapp>`. Varje start kontrollerar att
+    senaste kopian går att dekryptera och är en hel databas. Prova en fullständig återställning minst en gång
+    per år.
 - **Arkivering:** räkenskapsinformationen ska bevaras i sju år efter utgången av kalenderåret då räkenskapsåret
   avslutades. Efter varje bokslut skapas ett årsarkiv (**Bokföring → Årsarkiv**). Det är en zip-fil med:
   - SIE 4 med balanser och alla verifikationer,
@@ -236,7 +244,8 @@ Från en verifikation finns länkar till faktura, bilaga, bankpost och rättelse
   - denna systemdokumentation,
   - en innehållsförteckning med SHA-256 per fil.
 
-  En kopia sparas automatiskt i `bitero-erp-backups\arsarkiv\`. Arkivet är läsbart utan programmet.
+  En krypterad kopia sparas automatiskt i `bitero-erp-backups\arsarkiv\`. Det nedladdade arkivet är läsbart
+  utan programmet; kopian i OneDrive läses med `dekryptera` och backupnyckeln.
 - **Uppdateringar och sårbarheter:** beroendenas versioner är låsta i `uv.lock`. GitHub kontrollerar varje
   vecka och vid varje ändring att inget beroende har en känd sårbarhet (pip-audit), och Dependabot föreslår
   uppdateringar. En uppdatering tas in först när alla automatiska tester gått igenom, och registreras som ny
@@ -292,6 +301,19 @@ Vad ändringarna innebär beskrivs i ändringsloggen nedan.
 
   Testerna körs mot en tillfällig databas och rör inte bokföringen. Misslyckas de vid start varnar programmet,
   och den nya versionen registreras inte.
+- **Kontroller vid varje start:** innan programmet startar kontrolleras att
+  - databasfilen är hel (SQLite `integrity_check`),
+  - behandlingshistorikens hashkedja är obruten,
+  - varje verifikation balanserar,
+  - säkerhetskopian togs och går att dekryptera och läsa,
+  - en extern kopia tagits de senaste 35 dagarna,
+  - programfilerna är oförändrade jämfört med versionen i git (annars går versionen inte att spåra).
+
+  Vid fel frågar programmet om det ska startas ändå, och felet visas överst på varje sida tills det är åtgärdat.
+- **Kodkvalitet:** GitHub kör vid varje ändring också ruff (statisk kodanalys) och mäter hur stor del av koden
+  testerna täcker. Täckningen får inte understiga 75 %.
+- **Felloggning:** fel och varningar skrivs till `bitero-erp-data\fel.log` (roterar vid 2 MB, fem filer sparas).
+- **Inloggning:** sessionen gäller i sju dagar. Datorn ska låsas automatiskt efter några minuters inaktivitet.
 - **Löpande avstämning:** jämför varje månad saldobalans och momsrapport med Visma. Stäm av 1930 mot
   kontoutdraget och 1630 mot skattekontot.
 - **Årliga uppdateringar:** skattetabeller (importeras under Inställningar), arbetsgivaravgifter och momsregler.

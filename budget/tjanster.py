@@ -8,7 +8,7 @@ from django.db.models.functions import ExtractMonth
 from bokforing.models import Transaktion
 from verksamhet.models import Tidpost, Uppdrag
 
-from .models import Budget, Budgetrad
+from .models import Budgetrad
 
 NOLL = Decimal(0)
 

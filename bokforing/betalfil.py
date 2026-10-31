@@ -5,7 +5,6 @@ svenska banker tar emot. Bankgiro: ClrSysId SESBA, MmbId 9900, kontoschema BGNR.
 PlusGiro: ClrSysId SESBA, MmbId 9960, kontoschema BBAN.
 """
 
-import datetime as dt
 from decimal import Decimal
 from xml.sax.saxutils import escape
 
@@ -81,7 +80,7 @@ def skapa(fakturor, foretag, betaldatum=None):
         a(f"<DbtrAgt><FinInstnId><BIC>{foretag.bic.strip()}</BIC></FinInstnId></DbtrAgt>")
     else:
         a("<DbtrAgt><FinInstnId/></DbtrAgt>")
-    for i, (lf, konto, mmb, schema) in enumerate(poster, 1):
+    for lf, konto, mmb, schema in poster:
         a("<CdtTrfTxInf>")
         a(f"<PmtId><InstrId>{lf.pk}</InstrId><EndToEndId>LF{lf.pk}</EndToEndId></PmtId>")
         a(f'<Amt><InstdAmt Ccy="SEK">{lf.belopp:.2f}</InstdAmt></Amt>')

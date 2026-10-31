@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db import IntegrityError, transaction
+from django.db import transaction
 from django.db.models import Q, Sum
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -18,8 +18,18 @@ from verksamhet.models import Faktura
 from . import sie
 from . import tjanster as bok
 from .bankimport import BankimportFel, las_kontoutdrag
-from .forms import (BankimportForm, BankpostAtgardForm, BetalaForm, LevfakturaForm, MomsperiodForm, PeriodForm,
-                    SieExportForm, SieImportForm, VerifikationForm, VerRadFormSet)
+from .forms import (
+    BankimportForm,
+    BankpostAtgardForm,
+    BetalaForm,
+    LevfakturaForm,
+    MomsperiodForm,
+    PeriodForm,
+    SieExportForm,
+    SieImportForm,
+    VerifikationForm,
+    VerRadFormSet,
+)
 from .models import Bankpost, Bilaga, IngaendeBalans, Leverantorsfaktura, Transaktion, Verifikation
 
 ANV = lambda request: request.user.get_username()  # noqa: E731
@@ -369,7 +379,7 @@ def moms(request):
     rapport = bok.momsrapport(fran, till)
     avrakning = bok.aktiva_ver(Verifikation.objects.filter(serie="M", text__contains=f"{fran}–{till}")).first()
     rutor = []
-    for rubrik_id, rubrik, nummer in bok.MOMSRUTOR:
+    for _rubrik_id, rubrik, nummer in bok.MOMSRUTOR:
         rutor.append({"rubrik": rubrik, "har_varden": any(rapport["rutor"].get(n) for n in nummer), "rader": [
             {"nr": n, "namn": bok.RUTNAMN[n], "belopp": rapport["rutor"].get(n, Decimal(0)),
              "konton": rapport["per_konto"].get(n, {})} for n in nummer]})
@@ -561,12 +571,16 @@ def arsarkiv(request):
         if ar not in ar_lista:
             raise Http404
         filnamn, data, info = arkiv.skapa(ar)
-        arkiv.spara_kopia(filnamn, data)
+        from config.kryptering import KrypteringsFel
+        try:
+            arkiv.spara_kopia(filnamn, data)
+        except KrypteringsFel as e:
+            messages.warning(request, f"Ingen kopia sparades i OneDrive: {e}")
         svar = HttpResponse(data, content_type="application/zip")
         svar["Content-Disposition"] = f'attachment; filename="{filnamn}"'
         return svar
     mapp = settings.BACKUP_DIR / "arsarkiv"
-    sparade = sorted(mapp.glob("arsarkiv_*.zip"), reverse=True)[:20] if mapp.exists() else []
+    sparade = sorted(mapp.glob("arsarkiv_*.zip*"), reverse=True)[:20] if mapp.exists() else []
     return render(request, "bokforing/arsarkiv.html", {
         "ar_lista": ar_lista, "forvalt": timezone.localdate().year - 1 if timezone.localdate().month < 7
         else timezone.localdate().year, "sparade": [(f.name, f.stat().st_size) for f in sparade],

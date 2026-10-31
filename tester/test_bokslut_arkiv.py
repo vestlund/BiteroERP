@@ -22,9 +22,12 @@ class Arsarkiv(TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        installningar = override_settings(MEDIA_ROOT=self.tmp.name, BACKUP_DIR=Path(self.tmp.name) / "bk")
+        installningar = override_settings(MEDIA_ROOT=self.tmp.name, BACKUP_DIR=Path(self.tmp.name) / "bk",
+                                          DATA_DIR=Path(self.tmp.name) / "data")
         installningar.enable()
         self.addCleanup(installningar.disable)
+        from config.kryptering import skapa_nyckel
+        skapa_nyckel()
 
         self.kund, _ = grunddata()
         IngaendeBalans.objects.create(ar=2026, konto_id=1930, belopp=d("1000"))
@@ -67,5 +70,5 @@ class Arsarkiv(TestCase):
         self.assertEqual(self.client.get(reverse("arsarkiv")).status_code, 200)
         r = self.client.post(reverse("arsarkiv"), {"ar": "2026"})
         self.assertEqual(r["Content-Type"], "application/zip")
-        self.assertEqual(len(list((Path(self.tmp.name) / "bk" / "arsarkiv").glob("*.zip"))), 1)
+        self.assertEqual(len(list((Path(self.tmp.name) / "bk" / "arsarkiv").glob("*.zip.krypterad"))), 1)
         self.assertEqual(self.client.post(reverse("arsarkiv"), {"ar": "1999"}).status_code, 404)

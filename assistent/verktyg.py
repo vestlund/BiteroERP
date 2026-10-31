@@ -153,7 +153,8 @@ def visa_underlag(fil):
     if p.suffix.lower() == ".heic":
         return (f"{p.name} är en HEIC-bild från iPhone som inte kan visas. Spara om den som JPEG "
                 "(eller ställ in kameran på 'Mest kompatibel').", None, None)
-    from PIL import Image as PILImage, ImageOps
+    from PIL import Image as PILImage
+    from PIL import ImageOps
     bild = ImageOps.exif_transpose(PILImage.open(io.BytesIO(data)))
     bild.thumbnail((1600, 1600))
     ut = io.BytesIO()

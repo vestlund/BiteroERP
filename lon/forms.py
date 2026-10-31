@@ -15,7 +15,10 @@ class DateInput(forms.DateInput):
 class AnstalldForm(forms.ModelForm):
     class Meta:
         model = Anstalld
-        exclude = []
+        fields = ["nummer", "fornamn", "efternamn", "personnummer", "adress", "postnummer", "ort", "epost",
+                  "telefon", "clearingnummer", "bankkonto", "befattning", "anstalld_fran", "anstalld_till",
+                  "lonetyp", "manadslon", "timlon", "loneskonto", "skattemetod", "skattetabell", "skattekolumn",
+                  "skatteprocent", "semesterdagar", "kostnadsstalle", "aktiv", "anteckning"]
         widgets = {"anstalld_fran": DateInput(), "anstalld_till": DateInput(),
                    "anteckning": forms.Textarea(attrs={"rows": 3})}
 

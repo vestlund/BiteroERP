@@ -2,6 +2,7 @@
 
 from django.test import SimpleTestCase, TestCase
 
+from bokforing import tjanster as bok
 from bokforing.models import Verifikation
 from budget import tjanster as budget
 from lon import tjanster as lon
@@ -66,7 +67,7 @@ class Lonekorningar(TestCase):
         self.assertEqual(rader[2730], d("-13510.60"))
         self.assertEqual(rader[1930], d("-27680"))
         self.assertEqual(self.korning.status, Lonekorning.BOKFORD)
-        with self.assertRaises(Exception):
+        with self.assertRaises(bok.BokforingsFel):
             lon.bokfor_lonekorning(self.korning)
         lon.las_upp(self.korning, datum("2026-05-26"))
         self.assertEqual(Verifikation.objects.filter(serie="S").count(), 2)

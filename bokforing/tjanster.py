@@ -4,7 +4,7 @@ from collections import defaultdict
 from decimal import Decimal
 
 from django.db import transaction
-from django.db.models import Max, Q, Sum
+from django.db.models import Max, Sum
 
 from logg.sparning import logga_objekt
 from register.models import Foretag, Konto

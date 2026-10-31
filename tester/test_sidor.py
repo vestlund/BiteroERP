@@ -4,12 +4,12 @@ from django.test import TestCase
 from django.urls import reverse
 
 from bokforing import tjanster as bok
-from bokforing.models import Bankpost, Leverantorsfaktura
 from bokforing.io_views import POSTER
+from bokforing.models import Bankpost, Leverantorsfaktura
 from budget.models import Budget
+from logg.models import Handelse, Systemversion
 from lon import tjanster as lon
 from lon.models import Anstalld, Lonekorning, Lonespec
-from logg.models import Handelse, Systemversion
 from register.views import REGISTER
 from verksamhet.models import Tidpost, Uppdrag
 

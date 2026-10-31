@@ -71,7 +71,7 @@ def _efter(text, ord_lista, monster, rader_framat=1, utom=None):
             m = re.search(rf"\b{ordet}\b", rad, re.I)
             if not m or (utom and re.search(utom, rad, re.I)):
                 continue
-            for j, kandidat in enumerate([rad[m.end():]] + rader[i + 1:i + 1 + rader_framat]):
+            for kandidat in [rad[m.end():]] + rader[i + 1:i + 1 + rader_framat]:
                 for t in re.finditer(monster, kandidat):
                     v = t.group(1)
                     # hoppa över procentsatser ("Moms 25 %")

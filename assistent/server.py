@@ -41,9 +41,10 @@ def _som_claude(fn):
     """Kör verktyget som användaren 'Claude' i behandlingshistoriken och gör fel till läsbara meddelanden."""
     @functools.wraps(fn)
     def inre(*args, **kwargs):
-        from bokforing.tjanster import BokforingsFel
         from django.core.exceptions import ValidationError
         from django.db import close_old_connections
+
+        from bokforing.tjanster import BokforingsFel
         close_old_connections()
         tokens = satt_kontext(v.ANVANDARE, f"MCP {fn.__name__}")
         try:

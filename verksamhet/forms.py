@@ -1,7 +1,6 @@
 from django import forms
 
 from config.formular import BeloppField
-
 from register.models import Artikel, Kund
 
 from .models import Faktura, Fakturarad, Tidpost, Uppdrag

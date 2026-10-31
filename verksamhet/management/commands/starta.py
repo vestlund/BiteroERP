@@ -8,9 +8,11 @@ from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
+from config import kryptering
 from config.version import VERSION
 from logg.sparning import har_andrats, registrera_systemversion
 from register.models import Kund
+from verksamhet import halsokontroll
 
 from .backup import gor_backup
 
@@ -44,10 +46,38 @@ class Command(BaseCommand):
         parser.add_argument("--port", default=PORT)
         parser.add_argument("--ingen-webblasare", action="store_true")
 
+    def sakerstall_nyckel(self):
+        """Första gången skapas en backupnyckel som användaren måste spara i sin lösenordshanterare."""
+        if kryptering.finns_nyckel():
+            return
+        from .backup import DB_MONSTER
+
+        if settings.BACKUP_DIR.exists() and any(settings.BACKUP_DIR.glob(DB_MONSTER)):
+            self.stdout.write(self.style.ERROR(
+                "\n  Backupnyckeln saknas på datorn men det finns krypterade säkerhetskopior.\n"
+                "  Ange nyckeln från din lösenordshanterare (eller lämna tomt för att avbryta)."))
+            text = input("  Nyckel: ").strip()
+            if not text:
+                raise SystemExit(1)
+            kryptering.ange_nyckel(text)
+            return
+        text = kryptering.skapa_nyckel()
+        self.stdout.write(self.style.WARNING(
+            "\n  Säkerhetskopiorna krypteras nu. Spara den här nyckeln i din lösenordshanterare\n"
+            "  (t.ex. som \"Bitero ERP backupnyckel\"). Utan den går kopiorna inte att läsa om datorn försvinner.\n"))
+        self.stdout.write(f"    {text}\n")
+        self.stdout.write("  Du kan visa nyckeln igen med: uv run python manage.py backupnyckel\n")
+        input("  Tryck Enter när nyckeln är sparad ... ")
+
     def handle(self, *args, **opts):
-        backup = gor_backup()
-        if backup:
-            self.stdout.write(f"Backup: {backup}")
+        self.sakerstall_nyckel()
+        backup_fel = None
+        try:
+            backup = gor_backup()
+            if backup:
+                self.stdout.write(f"Backup: {backup.name} (krypterad)")
+        except Exception as e:  # noqa: BLE001 - visas i hälsokontrollen nedan
+            backup_fel = e
         call_command("migrate", verbosity=0)
         sv = None
         if har_andrats(settings.BASE_DIR):
@@ -64,6 +94,18 @@ class Command(BaseCommand):
         if sv:
             self.stdout.write(f"Ny systemversion {VERSION} registrerad i behandlingshistoriken"
                               f" ({sv.antal_andringar} ändrade filer).")
+
+        self.stdout.write("Kontrollerar databas, behandlingshistorik, bokföring och säkerhetskopia ...")
+        anm = halsokontroll.kor_alla(backup_fel)
+        for a in anm:
+            stil = self.style.ERROR if a.niva == halsokontroll.FEL else self.style.WARNING
+            self.stdout.write(stil(f"  {'FEL' if a.niva == halsokontroll.FEL else 'Obs'}: {a.rubrik}. {a.text}"))
+        if not anm:
+            self.stdout.write(self.style.SUCCESS("  Allt i ordning"))
+        if any(a.niva == halsokontroll.FEL for a in anm):
+            self.stdout.write(self.style.ERROR("\n  Rätta felen innan du bokför. Varningen visas också i webbläsaren."))
+            if input("  Starta ändå? (j/N) ").strip().lower() != "j":
+                return
 
         if not Kund.objects.exists() and any(settings.IMPORT_DIR.glob("*_Export*.csv")):
             self.stdout.write("Första start – importerar register från mappen import/ ...")

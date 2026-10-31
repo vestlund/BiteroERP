@@ -92,7 +92,7 @@ class Rapport(FPDF):
                 rubrikrad()
             if fet:
                 self.set_font("Helvetica", "B", storlek)
-            for (namn, bredd, just), v in zip(kolumner, varden):
+            for (_namn, bredd, just), v in zip(kolumner, varden):
                 t = text(v)
                 while t and self.get_string_width(t) > bredd - 1:
                     t = t[:-1]
@@ -102,7 +102,7 @@ class Rapport(FPDF):
                 self.set_font("Helvetica", "", storlek)
         if summa:
             self.set_font("Helvetica", "B", storlek)
-            for (namn, bredd, just), v in zip(kolumner, summa):
+            for (_namn, bredd, just), v in zip(kolumner, summa):
                 self.cell(bredd, hojd + 1, text(v), border="T", align=just)
             self.ln()
             self.set_font("Helvetica", "", storlek)

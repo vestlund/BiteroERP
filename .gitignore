@@ -10,6 +10,11 @@ import/
 *.sqlite3
 *.sqlite3-*
 secret_key.txt
+backupnyckel.txt
+*.krypterad
+*.zip
+halsokontroll.json
+senaste_externa_kopia.txt
 *.si
 *.se
 *.sie
@@ -22,3 +27,4 @@ senaste_testfel.txt
 .DS_Store
 Thumbs.db
 desktop.ini
+.coverage

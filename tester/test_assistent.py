@@ -14,7 +14,7 @@ from bokforing.models import Bilaga, Leverantorsfaktura
 from logg.models import Handelse
 from register.models import Konto
 
-from .grund import d, grunddata
+from .grund import grunddata
 
 
 def kvittopdf():
@@ -154,6 +154,7 @@ class Server(TestCase):
 
     def test_fel_blir_verktygsfel(self):
         from mcp.server.mcpserver.exceptions import ToolError
+
         from assistent.server import registrera_kvitto
         with tempfile.TemporaryDirectory() as tmp, override_settings(INKORG_DIR=Path(tmp)):
             with self.assertRaisesMessage(ToolError, "finns inte i inkorgen"):

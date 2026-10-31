@@ -16,8 +16,9 @@
   <label>Räkenskapsår <select name="ar">{% for a in ar_lista %}<option value="{{ a|stringformat:'d' }}" {% if a == forvalt %}selected{% endif %}>{{ a|stringformat:"d" }}</option>{% endfor %}</select></label>
   <button>Skapa årsarkiv</button>
 </form>
-<p class="hjalp">Skapa arkivet efter bokslutet, när verifikationerna för året är klara. En kopia sparas automatiskt i
-  <code>{{ mapp }}</code> (OneDrive). Spara gärna ytterligare en kopia på ett annat ställe, t.ex. ett USB-minne.</p>
+<p class="hjalp">Skapa arkivet efter bokslutet, när verifikationerna för året är klara. En krypterad kopia sparas automatiskt i
+  <code>{{ mapp }}</code> (OneDrive) och följer med när du kör <code>extern-kopia.bat</code>.
+  Läs en krypterad kopia med <code>uv run python manage.py dekryptera &lt;fil&gt;</code>.</p>
 {% if sparade %}
 <h2>Sparade arkiv</h2>
 <table><thead><tr><th>Fil</th><th class="tal">Storlek</th></tr></thead>

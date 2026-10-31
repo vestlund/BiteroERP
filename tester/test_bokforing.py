@@ -36,7 +36,7 @@ class Verifikationer(TestCase):
             bok.bokfor(datum("2026-02-01"), "X", [(9999, d("1")), (1930, d("-1"))])
 
     def test_nummerserie_per_serie_och_ar_utan_luckor(self):
-        a = [bok.bokfor(datum("2026-01-0%d" % i), "x", [(6570, 1), (1930, -1)]).nummer for i in range(1, 4)]
+        a = [bok.bokfor(datum(f"2026-01-0{i}"), "x", [(6570, 1), (1930, -1)]).nummer for i in range(1, 4)]
         b = bok.bokfor(datum("2026-01-05"), "x", [(6570, 1), (1930, -1)], serie="B").nummer
         c = bok.bokfor(datum("2027-01-05"), "x", [(6570, 1), (1930, -1)]).nummer
         self.assertEqual(a, [1, 2, 3])

@@ -6,7 +6,6 @@ from django.db import models
 from django.urls import reverse
 
 from logg.managers import LoggadQuerySet
-
 from register.models import Konto, Kund
 from verksamhet.models import Uppdrag
 

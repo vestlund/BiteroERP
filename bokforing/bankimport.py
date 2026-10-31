@@ -69,7 +69,7 @@ def las_kontoutdrag(data: bytes, kontonr=1930):
     text = _avkoda(data)
     rader = text.splitlines()
     # Hitta rubrikraden: första raden som innehåller både ett datum- och ett beloppsord
-    for start, rad in enumerate(rader[:30]):
+    for start, rad in enumerate(rader[:30]):  # noqa: B007 - start används efter loopen
         l = rad.lower()
         if any(b in l for b in BELOPPKOLUMNER) and any(d in l for d in ("datum", "dag", "date", "bokförd")):
             break

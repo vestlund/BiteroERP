@@ -127,7 +127,6 @@ def lonespec(request, pk):
     if request.method == "POST" and not las:
         if form.is_valid() and rader.is_valid():
             with transaction.atomic():
-                ny_skatt = form.cleaned_data["skatteavdrag"]
                 s = form.save(commit=False)
                 rader.save()
                 if "foresla" in request.POST:
@@ -203,6 +202,7 @@ def skattetabeller(request):
         except skattetabell.TabellFel as e:
             form.add_error("fil", str(e))
     from django.db.models import Count
+
     from .models import Skattetabellrad
     finns = Skattetabellrad.objects.values("ar").annotate(n=Count("id"), t=Count("tabell", distinct=True)).order_by("-ar")
     return render(request, "lon/skattetabeller.html", {"form": form, "finns": finns})

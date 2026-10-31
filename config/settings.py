@@ -72,6 +72,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "register.context_processors.foretag",
+                "verksamhet.context_processors.halsa",
             ],
         },
     },
@@ -121,15 +122,22 @@ LOGGING = {
     "formatters": {"tid": {"format": "{asctime} {levelname} {name}: {message}", "style": "{"}},
     "handlers": {
         "fil": {"class": "logging.handlers.RotatingFileHandler", "filename": DATA_DIR / "fel.log",
-                "maxBytes": 2_000_000, "backupCount": 3, "encoding": "utf-8", "formatter": "tid",
-                "level": "ERROR"},
+                "maxBytes": 2_000_000, "backupCount": 5, "encoding": "utf-8", "formatter": "tid",
+                "level": "WARNING"},
         "terminal": {"class": "logging.StreamHandler", "level": "ERROR"},
     },
-    "loggers": {"django": {"handlers": ["fil", "terminal"], "level": "ERROR", "propagate": False}},
+    "loggers": {
+        "django": {"handlers": ["fil", "terminal"], "level": "ERROR", "propagate": False},
+        # Säkerhetsrelaterat (t.ex. ogiltig Host, CSRF) sparas även som varning
+        "django.security": {"handlers": ["fil"], "level": "WARNING", "propagate": False},
+        "waitress": {"handlers": ["fil", "terminal"], "level": "WARNING", "propagate": False},
+    },
+    # Allt annat: varningar och fel från programmets egna moduler och Claude-kopplingen
+    "root": {"handlers": ["fil"], "level": "WARNING"},
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = "/admin/login/"
 LOGIN_REDIRECT_URL = "/"
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 14
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # inloggad i en vecka

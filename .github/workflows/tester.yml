@@ -14,10 +14,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
-      - name: Kör de automatiska testerna
+      - name: Kör de automatiska testerna och mät täckningen
         env:
           BITERO_DATA_DIR: ${{ runner.temp }}/bitero-erp-data
-        run: uv run python manage.py test tester
+        run: |
+          uv run coverage run manage.py test tester
+          uv run coverage report
+
+  kodkvalitet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Sök efter vanliga fel med ruff
+        run: uv run ruff check --output-format github
 
   sakerhet:
     runs-on: ubuntu-latest

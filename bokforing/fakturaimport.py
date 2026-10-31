@@ -12,7 +12,7 @@ import io
 import json
 import re
 import uuid
-from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.db import transaction
@@ -187,7 +187,7 @@ def tolka(typ, rader, mappning):
     for i, rad in enumerate(rader, start=2):
         if any(_norm(c) in ("summa", "total", "totalt", "sum", "totalsumma") for c in rad[:3]):
             continue  # summarad
-        hamta = lambda f: (rad[mappning[f]].strip() if f in mappning and mappning[f] < len(rad) else "")  # noqa: E731
+        hamta = lambda f, rad=rad: (rad[mappning[f]].strip() if f in mappning and mappning[f] < len(rad) else "")  # noqa: E731
         try:
             belopp = _tal(hamta("belopp"))
             if belopp is None:
@@ -198,7 +198,7 @@ def tolka(typ, rader, mappning):
                 moms = belopp - netto
             rest = _tal(hamta("rest"), tyst=True)
             status = _norm(hamta("status"))
-            betaldatum = _datum(hamta("betaldatum")) if hamta("betaldatum") and not hamta("betaldatum").lower() in (
+            betaldatum = _datum(hamta("betaldatum")) if hamta("betaldatum") and hamta("betaldatum").lower() not in (
                 "ja", "nej", "yes", "no", "true", "false") else None
             makulerad = any(o in status for o in MAKULERAD_ORD)
             if rest is not None:
@@ -407,7 +407,6 @@ def fran_sie(data: bytes, typ):
     vers, _ = sie.las_verifikationer(data)
     poster, fel, betalningar = [], [], []
     for v in vers:
-        text = v["text"] + " " + " ".join(t for _, _, t in v["rader"] if t)
         if sie.VAR_MARKERING.search(v["text"]):
             continue  # skapad i det här systemet och exporterad till Visma – finns redan här
         bank = _summa(v["rader"], 1900, 1999) + _summa(v["rader"], 1630, 1630)
@@ -565,7 +564,7 @@ def rensa_visma(typ):
         qs = Faktura.objects.filter(fran_visma=True, verifikationer__isnull=True)
         Tidpost.objects.filter(fakturarad__faktura__in=qs).update(fakturarad=None)
     else:
-        from .models import Bankpost, Leverantorsfaktura
+        from .models import Leverantorsfaktura
         qs = Leverantorsfaktura.objects.filter(fran_visma=True, verifikationer__isnull=True)
     antal = qs.count()
     for obj in qs:

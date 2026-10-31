@@ -117,6 +117,7 @@
     </div>
   </header>
   <main>
+    {% for a in halsa %}<p class="meddelande {% if a.niva == 'fel' %}error{% else %}warning{% endif %}"><strong>{{ a.rubrik }}.</strong> {{ a.text }}</p>{% endfor %}
     {% for m in messages %}<p class="meddelande {{ m.tags }}">{{ m }}</p>{% endfor %}
     {% block innehall %}{% endblock %}
   </main>
