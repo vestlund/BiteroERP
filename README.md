@@ -84,6 +84,21 @@ GitHub till `C:\kod\bitero-erp` och tar med Visma-filerna och säkerhetskopiorna
 - **Se historiken:** `git log` eller på GitHub. Där körs testerna också vid varje uppladdning (fliken Actions).
 - Databaser, säkerhetskopior, Visma-filer och PDF:er checkas aldrig in (se `.gitignore`).
 
+## Bokföra kvitton med Claude
+
+Claude i skrivbordsappen kan bokföra kvitton direkt i systemet. Allt körs lokalt; inget öppnas mot internet.
+
+1. Kör `installera-claude.bat` en gång. Starta sedan om Claude-appen helt (avsluta i systemfältet).
+2. Lägg kvitton (JPG, PNG eller PDF) i `OneDrive - Bitero\Kvitton inkorg`. Från mobilen: spara eller dela
+   bilden till den mappen i OneDrive-appen. I en chatt som är kopplad till datorn kan du också ladda upp
+   bilden och be Claude lägga den i inkorgen.
+3. Skriv till exempel *"bokför kvittona i inkorgen"*. Claude läser underlaget, föreslår konto och moms och
+   ber om ditt godkännande för varje bokning.
+
+Datorn måste vara på och Claude-appen öppen. Webbservern behöver inte köra. HEIC-bilder (iPhone) stöds inte;
+ställ in kameran på "Mest kompatibel" eller exportera som JPG. Ta bort kopplingen med
+`uv run python manage.py installera_claude --ta-bort`.
+
 ## Importera nya exporter
 
 Lägg nya Visma-filer i `import/` och kör `uv run python manage.py importera_visma`.

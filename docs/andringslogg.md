@@ -3,6 +3,13 @@
 Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
 fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
 
+## 2026.10.31-5
+
+- **Claude-koppling (MCP):** Claude i skrivbordsappen kan läsa kvitton i inkorgen, söka leverantörer och
+  tidigare konteringar, och registrera kvitton och leverantörsfakturor med underlaget som bilaga.
+  Varje bokning godkänns i appen och loggas som användaren Claude. Installeras med `installera-claude.bat`.
+- Ny inställning `BITERO_INKORG_DIR` för inkorgsmappen.
+
 ## 2026.10.31-4
 
 Nio nya funktioner:

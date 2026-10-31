@@ -7,12 +7,13 @@ import os
 import secrets
 from pathlib import Path
 
-from .datadir import hitta_backupmapp, hitta_datamapp
+from .datadir import hitta_backupmapp, hitta_datamapp, hitta_inkorg
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Databasen ligger utanför OneDrive, se config/datadir.py
 DATA_DIR = hitta_datamapp(BASE_DIR)
 BACKUP_DIR = hitta_backupmapp(BASE_DIR)  # i OneDrive, se config/datadir.py
+INKORG_DIR = hitta_inkorg(DATA_DIR)  # kvitton som Claude bokför, se assistent/
 IMPORT_DIR = BASE_DIR / "import"
 
 # Hemlig nyckel skapas vid första start och sparas lokalt (ska inte delas).
@@ -41,6 +42,7 @@ INSTALLED_APPS = [
     "budget",
     "logg",
     "planering",
+    "assistent",
 ]
 
 MIDDLEWARE = [

@@ -62,3 +62,18 @@ def hitta_backupmapp(base_dir: Path) -> Path:
         if rot and Path(rot).is_dir():
             return Path(rot) / "bitero-erp-backups"
     return base_dir / "backups"
+
+
+def hitta_inkorg(data_dir: Path) -> Path:
+    """Inkorg för kvitton och fakturor som Claude ska bokföra.
+
+    I OneDrive (företagets i första hand) så att du kan fota in kvitton från mobilen, annars i datamappen.
+    Miljövariabeln BITERO_INKORG_DIR går före.
+    """
+    if satt := os.environ.get("BITERO_INKORG_DIR"):
+        return Path(satt)
+    for var in ("OneDriveCommercial", "OneDrive"):
+        rot = os.environ.get(var)
+        if rot and Path(rot).is_dir():
+            return Path(rot) / "Kvitton inkorg"
+    return data_dir / "inkorg"

@@ -238,6 +238,18 @@ Från en verifikation finns länkar till faktura, bilaga, bankpost och rättelse
 
   En kopia sparas automatiskt i `bitero-erp-backups\arsarkiv\`. Arkivet är läsbart utan programmet.
 - **Behörighet:** endast inloggade användare. Lösenord sparas som hash och visas aldrig i historiken.
+- **Claude-koppling (MCP):** Claude i Claudes skrivbordsapp kan registrera kvitton och leverantörsfakturor
+  via en lokal MCP-server (`manage.py mcp`). Den startas av appen på samma dator och lyssnar inte på nätverket.
+  - Underlag läses bara från inkorgen (`OneDrive\Kvitton inkorg`, ändras med `BITERO_INKORG_DIR`).
+    Filnamn utanför inkorgen avvisas.
+  - Varje skrivande anrop (registrera kvitto, registrera leverantörsfaktura, ny leverantör) måste godkännas av
+    användaren i appen. Läsande anrop (inkorg, kontoplan, sök) är markerade som skrivskyddade.
+  - Bokföringen går genom samma behandlingsregel som manuell registrering (avsnitt 4). Underlaget sparas som
+    bilaga till verifikationen och filen flyttas till `Bokförda\ÅÅÅÅ-MM\` i inkorgen.
+  - Dubblettkontroll: samma fil (SHA-256) stoppas alltid. Samma datum, motpart och belopp stoppas om inte
+    användaren uttryckligen godkänt en dubblett.
+  - Alla ändringar loggas i behandlingshistoriken med användaren **Claude** och källan `MCP <verktyg>`.
+  - Fel bokningar rättas som vanligt med rättelseverifikation; verifikationer kan inte ändras.
 
 ## 7. Behandlingshistorik
 
