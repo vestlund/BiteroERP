@@ -53,7 +53,7 @@
       <svg viewBox="0 0 24 24"><path d="M3 9l9-5 9 5"/><path d="M5 9v9M10 9v9M14 9v9M19 9v9M3 20h18"/></svg>Kassa- och bankhändelser
       {% if bank_att_hantera %}<span class="bricka">{{ bank_att_hantera }}</span>{% endif %}</a>
 
-    <details {% if '/bokforing/' in p or 'register/konton' in p %}open{% endif %}>
+    <details {% if '/bokforing/' in p or 'register/konton' in p or 'register/inventarier' in p %}open{% endif %}>
       <summary><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Bokföring</summary>
       <a href="{% url 'bokforing' %}" class="{% if p == '/bokforing/' %}aktiv{% endif %}">Bokföringsöversikt</a>
       <a href="{% url 'verifikationer' %}" class="{% if '/verifikationer/' in p and '/ny/' not in p %}aktiv{% endif %}">Verifikationer</a>
@@ -63,7 +63,9 @@
       <a href="{% url 'huvudbok' %}" class="{% if '/huvudbok/' in p %}aktiv{% endif %}">Huvudbok</a>
       <a href="{% url 'register_lista' 'konton' %}" class="{% if 'register/konton' in p %}aktiv{% endif %}">Kontoplan</a>
       <a href="{% url 'sie' %}" class="{% if '/sie/' in p %}aktiv{% endif %}">Visma (SIE)</a>
+      <a href="{% url 'bokslut' %}" class="{% if '/bokslut/' in p %}aktiv{% endif %}">Bokslut</a>
       <a href="{% url 'arsarkiv' %}" class="{% if '/arsarkiv/' in p %}aktiv{% endif %}">Årsarkiv</a>
+      <a href="{% url 'register_lista' 'inventarier' %}" class="{% if 'register/inventarier' in p %}aktiv{% endif %}">Inventarier</a>
     </details>
 
     <details {% if '/register/foretag' in p or 'betalningsvillkor' in p or 'kostnadsstallen' in p or 'skattetabeller' in p or 'import-export' in p or 'matchningsregler' in p or 'behandlingshistorik' in p or 'systemdokumentation' in p or 'systemversion' in p %}open{% endif %}>

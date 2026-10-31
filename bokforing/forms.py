@@ -3,8 +3,10 @@ from decimal import Decimal
 from django import forms
 from django.utils import timezone
 
+from config.formular import BeloppField
 from register.models import Konto, Leverantor
 
+from .bokslut import PERIODISERINGAR
 from .models import Leverantorsfaktura
 
 
@@ -186,3 +188,12 @@ def mappningsform(falt, rubriker):
     attrs = {k: forms.TypedChoiceField(choices=val, coerce=int, required=False, empty_value=None)
              for k, *_ in falt}
     return type("MappningForm", (forms.Form,), {f"m_{k}": f for k, f in attrs.items()})
+
+
+class PeriodiseringForm(forms.Form):
+    typ = forms.ChoiceField(choices=[(k, v[0]) for k, v in PERIODISERINGAR.items()])
+    konto = forms.ModelChoiceField(
+        Konto.objects.filter(nummer__gte=3000, nummer__lt=9000), label="Resultatkonto",
+        error_messages={"invalid_choice": "Kontot finns inte (ange ett resultatkonto 3000–8999)."})
+    belopp = BeloppField(min_value=Decimal("0.01"))
+    text = forms.CharField(max_length=120, required=False)

@@ -88,16 +88,16 @@ def frister(fran, till, foretag, med_lon=True):
         res.append({"datum": vardag(dt.date(ar + 1, 2, 12)), "typ": "skatt",
                     "rubrik": f"Fyllnadsinbetalning {ar}",
                     "text": "Betala in eventuell kvarskatt över 30 000 kr för att undvika kostnadsränta.",
-                    "url": "rapporter", "query": ""})
+                    "url": "bokslut", "query": f"?ar={ar}#skatt"})
         res.append({"datum": dt.date(ar + 1, 6, 30), "typ": "bolag", "rubrik": f"Årsstämma {ar}",
                     "text": "Årsstämman ska hållas inom sex månader efter räkenskapsårets slut och fastställa "
-                            "resultat- och balansräkningen.", "url": "rapporter", "query": ""})
+                            "resultat- och balansräkningen.", "url": "bokslut", "query": f"?ar={ar}"})
         res.append({"datum": dt.date(ar + 1, 7, 31), "typ": "bolag", "rubrik": f"Årsredovisning {ar}",
-                    "text": "Årsredovisningen ska ha kommit in till Bolagsverket.", "url": "rapporter",
-                    "query": ""})
+                    "text": "Årsredovisningen ska ha kommit in till Bolagsverket.", "url": "bokslut",
+                    "query": f"?ar={ar}"})
         res.append({"datum": vardag(dt.date(ar + 1, 8, 1)), "typ": "skatt", "rubrik": f"Inkomstdeklaration 2 ({ar})",
-                    "text": "Lämna bolagets inkomstdeklaration till Skatteverket.", "url": "rapporter",
-                    "query": ""})
+                    "text": "Lämna bolagets inkomstdeklaration till Skatteverket.", "url": "bokslut",
+                    "query": f"?ar={ar}"})
     return sorted((f for f in res if fran <= f["datum"] <= till), key=lambda f: (f["datum"], f["rubrik"]))
 
 

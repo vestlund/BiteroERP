@@ -149,6 +149,22 @@ Allt annat hanteras manuellt. Bankposter känns igen med en kontrollsumma, så s
 Betalfilen följer ISO 20022 pain.001.001.03: bankgiro via SESBA 9900/BGNR, plusgiro via SESBA 9960/BBAN.
 OCR skickas som strukturerad referens när kontrollsiffran stämmer.
 
+### Bokslut (Bokföring → Bokslut)
+Bokslutsverifikationerna bokförs i serie A per den 31 december med texten "Bokslut <år>: …". Varje steg kan
+bara bokföras en gång.
+- **Periodiseringar:** upplupen/förutbetald intäkt eller kostnad mot 1790 eller 2990, med automatisk återföring
+  den 1 januari. Upparbetad men ofakturerad tid föreslås som upplupen intäkt. Det gäller tid till och med 31/12
+  som var ofakturerad eller fakturerades efter årsskiftet.
+- **Avskrivningar:** inventarier i registret skrivs av linjärt per påbörjad månad från anskaffningen, under
+  avskrivningstiden: debet 7832, kredit 1229 (konton per inventarie).
+- **Skatt:** 20,6 % på resultat före skatt plus ej avdragsgilla kostnader (6072, 6342, 6982, 6992, 7622, 7623,
+  7632, 8423). Underlaget avrundas nedåt till hela hundratal. Bokförs 8910/2512. Förenklad beräkning, utan
+  periodiseringsfond och underskottsavdrag.
+- **Årets resultat:** 8999 mot 2099.
+- **Underlag till inkomstdeklaration 2:** räkenskapsschemat (INK2R), summerat per fält enligt BAS
+  kopplingstabell, och de vanligaste skattemässiga justeringarna (INK2S). Underlaget används för avstämning.
+  Någon SRU-fil skapas inte, eftersom Skatteverkets fältkoder för 2026 års blankett ännu inte är publicerade.
+
 ### Planering
 - **Likviditetsprognos** (Planering → Likviditet): saldot på företagskontot vecka för vecka.
   - Startsaldot är bankens senaste saldo från importerade kontoutdrag, annars bokfört saldo på 1930.

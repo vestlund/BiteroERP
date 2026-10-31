@@ -589,3 +589,51 @@ def moms_fil(request):
     svar = HttpResponse(data, content_type="application/xml; charset=iso-8859-1")
     svar["Content-Disposition"] = f'attachment; filename="{filnamn}"'
     return svar
+
+
+# ---------------------------------------------------------------- bokslut
+
+def bokslutssida(request):
+    from . import bokslut
+    from .forms import PeriodiseringForm
+
+    idag = timezone.localdate()
+    try:
+        ar = int(request.GET.get("ar") or request.POST.get("ar") or (idag.year - 1 if idag.month <= 6 else idag.year))
+    except ValueError:
+        raise Http404
+    pform = PeriodiseringForm(request.POST if request.POST.get("atgard") == "periodisering" else None,
+                              initial={"typ": "upplupen_intakt", "konto": 3041,
+                                       "belopp": bokslut.upparbetat_ej_fakturerat(ar) or None})
+    if request.method == "POST":
+        atgard, anv = request.POST.get("atgard"), ANV(request)
+        try:
+            if atgard == "periodisering":
+                if not pform.is_valid():
+                    raise bok.BokforingsFel(_felen(pform))
+                d = pform.cleaned_data
+                ver, ater = bokslut.bokfor_periodisering(ar, d["typ"], d["konto"].pk, d["belopp"], d["text"], anv)
+                messages.success(request, f"Periodiseringen bokfördes i {ver.vernr} och återförs {ater.datum} i {ater.vernr}.")
+            elif atgard == "avskrivningar":
+                ver = bokslut.bokfor_avskrivningar(ar, anv)
+                messages.success(request, f"Avskrivningarna bokfördes i {ver.vernr}.")
+            elif atgard == "skatt":
+                ver = bokslut.bokfor_skatt(ar, bokslut.skatteberakning(ar)["skatt"], anv)
+                messages.success(request, f"Skatten bokfördes i {ver.vernr}.")
+            elif atgard == "resultat":
+                ver = bokslut.bokfor_arets_resultat(ar, anv)
+                messages.success(request, f"Årets resultat bokfördes i {ver.vernr}.")
+            return redirect(f"{request.path}?ar={ar}")
+        except bok.BokforingsFel as e:
+            messages.error(request, str(e))
+            if atgard != "periodisering":
+                return redirect(f"{request.path}?ar={ar}")
+    ar_lista = sorted(set(Verifikation.objects.values_list("ar", flat=True)) | {idag.year}, reverse=True)
+    periodiseringar = Verifikation.objects.filter(ar=ar, text__startswith=f"Bokslut {ar}:", rattar__isnull=True,
+                                                  rattelser__isnull=True).order_by("nummer")
+    return render(request, "bokforing/bokslut.html", {
+        "ar": ar, "ar_lista": ar_lista, "checklista": bokslut.checklista(ar), "pform": pform,
+        "upparbetat": bokslut.upparbetat_ej_fakturerat(ar), "avskrivningar": bokslut.avskrivningar(ar),
+        "skatt": bokslut.skatteberakning(ar), "ink2r": bokslut.ink2r(ar), "ink2s": bokslut.ink2s(ar),
+        "bokslutsver": periodiseringar, "konton": Konto.objects.filter(aktiv=True, nummer__gte=3000, nummer__lt=9000),
+    })

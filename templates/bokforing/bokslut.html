@@ -1,0 +1,75 @@
+{% extends "base.html" %}{% load kr %}
+{% block titel %}Bokslut {{ ar|stringformat:"d" }}{% endblock %}
+{% block innehall %}
+<div class="rubrikrad"><h1>Bokslut {{ ar|stringformat:"d" }}</h1>
+  <form method="get" class="filter"><select name="ar" onchange="this.form.submit()">{% for a in ar_lista %}<option value="{{ a|stringformat:'d' }}" {% if a == ar %}selected{% endif %}>{{ a|stringformat:"d" }}</option>{% endfor %}</select></form></div>
+<p class="dimmad">Gå igenom listan uppifrån och ned. Bokslutsverifikationerna bokförs per {{ ar|stringformat:"d" }}-12-31 i serie A.
+  Årsredovisningen görs sedan i ett årsredovisningsprogram utifrån SIE-filen i årsarkivet.</p>
+
+<h2>Checklista</h2>
+<table>
+  <tbody>{% for p in checklista %}
+    <tr><td style="width:2rem">{% if p.status == 'ok' %}✅{% elif p.status == 'fel' %}❌{% elif p.status == 'varning' %}⚠️{% else %}ℹ️{% endif %}</td>
+      <td>{% if p.url %}<a href="{% url p.url %}{{ p.query }}"><b>{{ p.rubrik }}</b></a>{% else %}<b>{{ p.rubrik }}</b>{% endif %}<br>
+        <small class="dimmad">{{ p.text }}</small></td></tr>
+  {% endfor %}</tbody>
+</table>
+
+<h2 id="periodisering">Periodiseringar</h2>
+<p class="liten-text">Bokförs per 31 december och återförs automatiskt 1 januari. Tid som var upparbetad men inte fakturerad
+  vid årsskiftet: <b>{{ upparbetat|kr }}</b> (föreslås som upplupen intäkt på 3041).</p>
+<form method="post" class="formgrid">{% csrf_token %}<input type="hidden" name="atgard" value="periodisering"><input type="hidden" name="ar" value="{{ ar|stringformat:'d' }}">
+  <label>Typ {{ pform.typ }}</label>
+  <label>Resultatkonto <input name="konto" list="kontolista" value="{{ pform.konto.value|default_if_none:'' }}" required autocomplete="off"></label>
+  <label>Belopp (kr) <input name="belopp" value="{{ pform.belopp.value|default_if_none:'' }}" inputmode="decimal" required></label>
+  <label>Text {{ pform.text }}</label>
+  <div><button>Bokför periodisering</button></div>
+</form>
+<datalist id="kontolista">{% for k in konton %}<option value="{{ k.nummer }}">{{ k.namn }}</option>{% endfor %}</datalist>
+
+<h2 id="avskrivningar">Avskrivningar</h2>
+{% if avskrivningar %}
+<table><thead><tr><th>Inventarie</th><th class="tal">Avskrivning {{ ar|stringformat:"d" }}</th><th class="tal">Restvärde 31/12</th></tr></thead>
+  <tbody>{% for r in avskrivningar %}<tr><td>{{ r.inventarie }}</td><td class="tal">{{ r.belopp|kr }}</td><td class="tal">{{ r.restvarde|kr }}</td></tr>{% endfor %}</tbody></table>
+<form method="post">{% csrf_token %}<input type="hidden" name="atgard" value="avskrivningar"><input type="hidden" name="ar" value="{{ ar|stringformat:'d' }}"><button>Bokför avskrivningar</button></form>
+{% else %}<p class="liten-text">Inga inventarier att skriva av. Lägg upp dem under <a href="{% url 'register_lista' 'inventarier' %}">Inventarier</a>.</p>{% endif %}
+
+<h2 id="skatt">Skatt på årets resultat</h2>
+<div class="tva-kol"><section>
+<table>
+  <tr><td>Resultat före skatt</td><td class="tal">{{ skatt.fore_skatt|kr }}</td></tr>
+  {% for r in skatt.ej_avdragsgilla %}<tr><td>+ {{ r.konto }} {{ r.namn }}</td><td class="tal">{{ r.belopp|kr }}</td></tr>{% endfor %}
+  <tr><td>Skattemässigt överskott</td><td class="tal">{{ skatt.overskott|kr }}</td></tr>
+  <tr><td>Avrundat nedåt till hela hundratal</td><td class="tal">{{ skatt.underlag|kr:0 }}</td></tr>
+  <tr class="summa"><td>Bolagsskatt 20,6 %</td><td class="tal">{{ skatt.skatt|kr:0 }}</td></tr>
+  <tr><td>Resultat efter skatt</td><td class="tal">{{ skatt.efter_skatt|kr }}</td></tr>
+</table></section>
+<section><p class="liten-text">Förenklad beräkning: tar inte hänsyn till periodiseringsfond, schablonintäkt, underskott från
+  tidigare år eller andra skattemässiga justeringar. Stäm av mot deklarationen i årsredovisningsprogrammet.</p>
+  {% if skatt.bokford_skatt %}<p>Bokförd skatt: <b>{{ skatt.bokford_skatt|kr }}</b></p>{% else %}
+  <form method="post">{% csrf_token %}<input type="hidden" name="atgard" value="skatt"><input type="hidden" name="ar" value="{{ ar|stringformat:'d' }}">
+    <button {% if not skatt.skatt %}disabled{% endif %} onclick="return confirm('Bokföra skatt {{ skatt.skatt|kr:0 }} kr per {{ ar|stringformat:'d' }}-12-31 (8910/2512)?')">Bokför skatt {{ skatt.skatt|kr:0 }} kr</button></form>{% endif %}
+</section></div>
+
+<h2 id="resultat">Årets resultat</h2>
+<form method="post">{% csrf_token %}<input type="hidden" name="atgard" value="resultat"><input type="hidden" name="ar" value="{{ ar|stringformat:'d' }}">
+  <p class="liten-text">Sista steget: årets resultat ({{ ink2r.resultat|kr }}) förs till 2099 Årets resultat (8999/2099).</p>
+  <button onclick="return confirm('Bokföra årets resultat?')">Bokför årets resultat</button></form>
+
+{% if bokslutsver %}<h3>Bokförda bokslutsverifikationer</h3>
+<ul class="liten-text">{% for v in bokslutsver %}<li><a href="{{ v.get_absolute_url }}">{{ v.vernr }}</a> {{ v.text }}</li>{% endfor %}</ul>{% endif %}
+
+<h2 id="ink2">Underlag till inkomstdeklaration 2</h2>
+<p class="liten-text">Räkenskapsschemat (INK2R) och de vanligaste skattemässiga justeringarna (INK2S), summerade enligt BAS kopplingstabell.
+  Hela kronor. Använd det för att stämma av deklarationen i årsredovisnings- eller deklarationsprogrammet.</p>
+<div class="tva-kol"><section>
+<h3>INK2R Räkenskapsschema</h3>
+<table class="liten-text"><thead><tr><th>Punkt</th><th>Post</th><th>Fält</th><th class="tal">Belopp</th></tr></thead>
+  <tbody>{% for r in ink2r.rader %}{% if r.belopp %}<tr><td>{{ r.punkt }}</td><td>{{ r.namn }}</td><td class="dimmad">{{ r.kod }}</td><td class="tal">{{ r.belopp|kr:0 }}</td></tr>{% endif %}{% endfor %}</tbody>
+  <tfoot><tr><td></td><td>Summa tillgångar / eget kapital och skulder</td><td></td><td class="tal">{{ ink2r.tillgangar|kr:0 }} / {{ ink2r.ek_skulder|kr:0 }}</td></tr></tfoot>
+</table></section>
+<section>
+<h3>INK2S Skattemässiga justeringar</h3>
+<table class="liten-text"><tbody>{% for punkt, namn, belopp in ink2s %}<tr><td>{{ punkt }}</td><td>{{ namn }}</td><td class="tal">{{ belopp|kr:0 }}</td></tr>{% endfor %}</tbody></table>
+</section></div>
+{% endblock %}

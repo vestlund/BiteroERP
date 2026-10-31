@@ -345,3 +345,55 @@ class Matchningsregel(models.Model):
             return False
         hay = f"{post.text} {post.motpart} {post.referens}".lower()
         return self.text_innehaller.lower() in hay
+
+
+class Inventarie(models.Model):
+    """Inventarier och andra materiella anläggningstillgångar som skrivs av enligt plan (rak linje).
+
+    Inventarier under ett halvt prisbasbelopp och med kort livslängd kostnadsförs i stället direkt
+    (förbrukningsinventarier, 5410) och läggs inte upp här.
+    """
+
+    objects = LoggadQuerySet.as_manager()
+
+    namn = models.CharField(max_length=200)
+    anskaffningsdatum = models.DateField()
+    anskaffningsvarde = models.DecimalField("anskaffningsvärde (exkl. moms)", max_digits=12, decimal_places=2)
+    livslangd_ar = models.PositiveSmallIntegerField("avskrivningstid (år)", default=5,
+                                                    help_text="Datorer ofta 3 år, övriga inventarier 5 år")
+    tillgangskonto = models.ForeignKey(Konto, on_delete=models.PROTECT, related_name="+", default=1220,
+                                       verbose_name="tillgångskonto")
+    ack_konto = models.ForeignKey(Konto, on_delete=models.PROTECT, related_name="+", default=1229,
+                                  verbose_name="konto för ackumulerade avskrivningar")
+    avskrivningskonto = models.ForeignKey(Konto, on_delete=models.PROTECT, related_name="+", default=7832,
+                                          verbose_name="kostnadskonto för avskrivning")
+    avyttrad = models.DateField("såld/utrangerad", null=True, blank=True)
+    anteckning = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "inventarie"
+        verbose_name_plural = "inventarier"
+        ordering = ["-anskaffningsdatum", "namn"]
+
+    def __str__(self):
+        return f"{self.namn} ({self.anskaffningsdatum:%Y-%m})"
+
+    @property
+    def aktiv(self):
+        return self.avyttrad is None
+
+    def avskrivning(self, ar):
+        """Planenlig avskrivning för räkenskapsåret, per påbörjad månad från anskaffningen."""
+        start = self.anskaffningsdatum.year * 12 + self.anskaffningsdatum.month - 1
+        slut_plan = start + self.livslangd_ar * 12
+        slut_ar = ar * 12 + 12
+        if self.avyttrad:
+            slut_ar = min(slut_ar, self.avyttrad.year * 12 + self.avyttrad.month - 1)
+        manader = max(0, min(slut_ar, slut_plan) - max(start, ar * 12))
+        per_manad = self.anskaffningsvarde / (self.livslangd_ar * 12)
+        return (per_manad * manader).quantize(Decimal("0.01"))
+
+    def bokfort_varde(self, ar):
+        """Restvärde vid utgången av året."""
+        tidigare = sum((self.avskrivning(a) for a in range(self.anskaffningsdatum.year, ar + 1)), Decimal(0))
+        return self.anskaffningsvarde - tidigare

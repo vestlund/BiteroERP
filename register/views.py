@@ -8,7 +8,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
-from bokforing.models import Matchningsregel
+from bokforing.models import Inventarie, Matchningsregel
 from config.formular import nasta_eller
 
 from .models import Artikel, Betalningsvillkor, Foretag, Konto, Kostnadsstalle, Kund, Leverantor
@@ -78,6 +78,17 @@ REGISTER = {
         "hjalp": "Regler används vid bankavstämning. En regel som bokför automatiskt används så fort en "
                  "bankpost passar; övriga visas som förslag på bankposten.",
     },
+    "inventarier": {
+        "modell": Inventarie, "titel": "Inventarier", "singular": "inventarie", "utan_aktiv": True,
+        "kolumner": [("namn", "Namn"), ("anskaffningsdatum", "Anskaffad"), ("anskaffningsvarde", "Värde"),
+                     ("livslangd_ar", "År"), ("avyttrad", "Såld/utrangerad")],
+        "sok": ["namn", "anteckning"],
+        "falt": [("Inventarie", ["namn", "anskaffningsdatum", "anskaffningsvarde", "livslangd_ar", "avyttrad",
+                                 "anteckning"]),
+                 ("Bokföring", ["tillgangskonto", "ack_konto", "avskrivningskonto"])],
+        "hjalp": "Inventarier som ska skrivas av enligt plan. Avskrivningen bokförs i bokslutet "
+                 "(Bokföring → Bokslut). Inventarier under ett halvt prisbasbelopp kostnadsförs direkt på 5410.",
+    },
     "betalningsvillkor": {
         "modell": Betalningsvillkor, "titel": "Betalningsvillkor", "singular": "betalningsvillkor",
         "kolumner": [("kod", "Kod"), ("dagar", "Dagar"), ("beskrivning", "Beskrivning")],
@@ -100,6 +111,9 @@ def _formklass(cfg):
     for namn in ("standardkonto", "intaktskonto", "motkonto"):
         if namn in form.base_fields:
             form.base_fields[namn].queryset = Konto.objects.filter(aktiv=True)
+    for falt in form.base_fields.values():
+        if isinstance(falt, forms.DateField):
+            falt.widget = forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
     return form
 
 
