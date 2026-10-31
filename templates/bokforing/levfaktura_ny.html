@@ -34,7 +34,11 @@
     <button type="submit" name="fler" value="1" class="outline">Bokför och registrera nästa</button>
   </div>
 </article>
-<article id="forhandsvisning" class="forhand"><p class="dimmad">Välj en fil så visas den här.</p></article>
+<div>
+<p id="tolkning" class="liten-text"></p>
+<article id="forhandsvisning" class="forhand"><p class="dimmad">Välj en fil så visas den här. En PDF med text läses av
+  automatiskt: leverantör, datum, belopp, moms och betalningsuppgifter fylls i.</p></article>
+</div>
 </div>
 </form>
 {{ lev|json_script:"lev" }}
@@ -75,7 +79,30 @@ $("bilaga").addEventListener("change", e => {
   const f = e.target.files[0], box = document.getElementById("forhandsvisning"); if (!f) return;
   const url = URL.createObjectURL(f);
   box.innerHTML = f.type === "application/pdf" ? `<iframe src="${url}"></iframe>` : `<img src="${url}" alt="">`;
+  tolka(f);
 });
+const NAMN = {leverantor: "leverantör", fakturadatum: "datum", forfallodatum: "förfallodatum", fakturanummer: "fakturanummer",
+              ocr: "OCR", belopp: "belopp", moms: "moms", bankgiro: "bankgiro", orgnr: "org.nr"};
+async function tolka(fil) {
+  const info = document.getElementById("tolkning");
+  if (!fil.name.toLowerCase().endsWith(".pdf")) { info.textContent = "Bilder läses inte av automatiskt – fyll i uppgifterna själv."; return; }
+  info.textContent = "Läser av …";
+  const data = new FormData(); data.append("fil", fil);
+  const svar = await fetch("{% url 'levfaktura_tolka' %}", {method: "POST", body: data,
+    headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value}});
+  const r = await svar.json();
+  if (r.fel) { info.textContent = r.fel; return; }
+  const satt = (namn, varde) => { const el = $(namn); if (el && varde !== "" && varde != null && !el.value) el.value = varde; };
+  if (r.leverantor && !$("leverantor").value) { $("leverantor").value = r.leverantor; $("leverantor").dispatchEvent(new Event("change")); }
+  ["fakturadatum", "forfallodatum", "fakturanummer", "ocr", "belopp"].forEach(n => satt(n, r[n]));
+  if (r.momssats !== "" && r.momssats != null) { $("momssats").value = String(r.momssats); }
+  else if (r.moms) { $("momssats").value = ""; $("moms").value = r.moms; }
+  raknaMoms();
+  const hittat = (r.hittat || []).map(k => NAMN[k] || k);
+  info.innerHTML = hittat.length ? `✓ Avläst: ${hittat.join(", ")}${r.leverantor_namn ? " (" + r.leverantor_namn + ")" : ""}. Kontrollera uppgifterna innan du bokför.`
+    : "Hittade inga uppgifter i PDF:en – fyll i dem själv.";
+  if (!r.leverantor && (r.orgnr || r.bankgiro)) info.innerHTML += ` Okänd leverantör (${[r.orgnr, r.bankgiro].filter(Boolean).join(", ")}) – <a href="{% url 'register_ny' 'leverantorer' %}" target="_blank">lägg upp den</a>.`;
+}
 raknaMoms();
 </script>
 {% endblock %}

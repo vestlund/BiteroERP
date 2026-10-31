@@ -108,6 +108,11 @@ Debet bankkonto (normalt 1930), kredit 1510, med fakturans belopp att betala.
 Debet kostnadskonto (nettobelopp), debet 2641 Ingående moms, kredit 2440 Leverantörsskulder.
 **Kvitto:** samma, men kredit på betalkontot (1930 företagskonto eller 2893 eget utlägg). Kvittot markeras betalt.
 
+**Avläsning:** när en PDF bifogas en ny leverantörsfaktura eller ett kvitto läses texten av. Leverantör,
+datum, förfallodatum, fakturanummer, OCR, belopp och moms föreslås i formuläret och ska kontrolleras innan
+du bokför. Leverantören känns igen på organisationsnummer, bankgiro/plusgiro eller namn. Inskannade kvitton
+och foton saknar text och fylls i för hand.
+
 ### Utbetalning av leverantörsfaktura (serie U)
 Debet 2440, kredit bankkontot.
 

@@ -637,3 +637,32 @@ def bokslutssida(request):
         "skatt": bokslut.skatteberakning(ar), "ink2r": bokslut.ink2r(ar), "ink2s": bokslut.ink2s(ar),
         "bokslutsver": periodiseringar, "konton": Konto.objects.filter(aktiv=True, nummer__gte=3000, nummer__lt=9000),
     })
+
+
+@require_POST
+def levfaktura_tolka(request):
+    """Läser av en PDF och returnerar förslag som JSON (fylls i formuläret av sidan)."""
+    from django.http import JsonResponse
+
+    from . import kvitto
+
+    fil = request.FILES.get("fil")
+    if not fil:
+        return JsonResponse({"fel": "Ingen fil."}, status=400)
+    if not fil.name.lower().endswith(".pdf"):
+        return JsonResponse({"fel": "Bara PDF-filer kan läsas av automatiskt. Fyll i uppgifterna från bilden själv."})
+    try:
+        res = kvitto.tolka(fil.read(), Leverantor.objects.filter(aktiv=True), Foretag.hamta().orgnr)
+    except kvitto.TolkningsFel as e:
+        return JsonResponse({"fel": str(e)})
+    lev = res.get("leverantor")
+    svar = {k: (str(v) if v is not None else "") for k, v in res.items()
+            if k in ("fakturadatum", "forfallodatum", "fakturanummer", "ocr", "belopp", "moms", "momssats",
+                     "bankgiro", "orgnr")}
+    for k in ("belopp", "moms"):
+        if svar.get(k):
+            svar[k] = svar[k].replace(".", ",")
+    svar["leverantor"] = lev.pk if lev else ""
+    svar["leverantor_namn"] = lev.namn if lev else ""
+    svar["hittat"] = res["hittat"]
+    return JsonResponse(svar)

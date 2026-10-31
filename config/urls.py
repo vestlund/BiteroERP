@@ -81,6 +81,7 @@ urlpatterns = [
     path("bokforing/bilaga/<int:pk>/", b.bilaga, name="bilaga"),
     path("inkop/", b.levfakturor, name="levfakturor"),
     path("inkop/ny/", b.levfaktura_ny, name="levfaktura_ny"),
+    path("inkop/tolka/", b.levfaktura_tolka, name="levfaktura_tolka"),
     path("inkop/<int:pk>/", b.levfaktura, name="levfaktura"),
     path("inkop/<int:pk>/betala/", b.levfaktura_betala, name="levfaktura_betala"),
     path("inkop/<int:pk>/makulera/", b.levfaktura_makulera, name="levfaktura_makulera"),
