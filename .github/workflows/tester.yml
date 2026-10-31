@@ -17,7 +17,7 @@ jobs:
         os: [windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
       - name: Kör de automatiska testerna och mät täckningen
         env:
@@ -29,7 +29,7 @@ jobs:
   kodkvalitet:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
       - name: Sök efter vanliga fel med ruff
         run: uv run ruff check --output-format github
@@ -37,7 +37,7 @@ jobs:
   sakerhet:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
       - name: Sök efter kända sårbarheter i beroendena (pip-audit)
         run: |
