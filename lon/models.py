@@ -253,6 +253,9 @@ class Lonespec(models.Model):
 class Lonerad(models.Model):
     objects = LoggadQuerySet.as_manager()
 
+    def __str__(self):
+        return f"{self.beskrivning or self.get_typ_display()}: {self.antal} × {self.a_pris}"
+
     spec = models.ForeignKey(Lonespec, on_delete=models.CASCADE, related_name="rader")
     typ = models.CharField("löneart", max_length=20, choices=LONEART_VAL)
     beskrivning = models.CharField(max_length=200, blank=True)
@@ -276,6 +279,9 @@ class Lonerad(models.Model):
 
 class Skattetabellrad(models.Model):
     """Skatteverkets allmänna skattetabeller (månadslön), importerade från deras fil."""
+
+    def __str__(self):
+        return f"Tabell {self.tabell} ({self.ar}) {self.inkomst_fran}–{self.inkomst_till} kr"
 
     ar = models.PositiveSmallIntegerField("år")
     tabell = models.PositiveSmallIntegerField()

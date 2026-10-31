@@ -57,6 +57,9 @@ class Budget(models.Model):
 class Budgetrad(models.Model):
     objects = LoggadQuerySet.as_manager()
 
+    def __str__(self):
+        return f"{self.beskrivning} ({self.get_typ_display()})"
+
     TID, INTAKT, KOSTNAD = "tid", "intakt", "kostnad"
     TYPER = [(TID, "Intäkt – timmar × pris"), (INTAKT, "Intäkt – belopp"), (KOSTNAD, "Kostnad")]
 

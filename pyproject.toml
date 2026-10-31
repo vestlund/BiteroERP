@@ -28,7 +28,7 @@ extend-exclude = ["*/migrations/*"]
 # Vanliga fel (F, E, W), importordning (I), troliga buggar (B), Django-specifikt (DJ), föråldrad syntax (UP)
 select = ["F", "E", "W", "I", "B", "DJ", "UP"]
 # Stilfrågor som inte påverkar funktionen
-ignore = ["E501", "E741", "B904", "B905", "DJ001", "DJ008", "DJ012"]
+ignore = ["E501", "E741", "B904", "B905", "DJ001", "DJ012"]
 
 [tool.coverage.run]
 source = ["."]

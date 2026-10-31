@@ -116,6 +116,9 @@ class Verifikation(models.Model):
 class Transaktion(models.Model):
     objects = TransaktionQuerySet.as_manager()
 
+    def __str__(self):
+        return f"{self.konto_id} {self.belopp}"
+
     verifikation = models.ForeignKey(Verifikation, on_delete=models.PROTECT, related_name="transaktioner")
     konto = models.ForeignKey(Konto, on_delete=models.PROTECT, related_name="transaktioner")
     belopp = models.DecimalField(max_digits=14, decimal_places=2, help_text="Positivt = debet, negativt = kredit")
@@ -192,6 +195,9 @@ class Bilaga(models.Model):
 
 class IngaendeBalans(models.Model):
     objects = LoggadQuerySet.as_manager()
+
+    def __str__(self):
+        return f"IB {self.ar} {self.konto_id}: {self.belopp}"
 
     ar = models.PositiveIntegerField("räkenskapsår")
     konto = models.ForeignKey(Konto, on_delete=models.PROTECT)
