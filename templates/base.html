@@ -22,7 +22,8 @@
       <a href="{% url 'faktura_lista' %}" class="{% if '/fakturor/' in p and 'fakturera-tid' not in p %}aktiv{% endif %}">Kundfakturor</a>
       <a href="{% url 'fakturera_tid' %}" class="{% if 'fakturera-tid' in p %}aktiv{% endif %}">Fakturera tid</a>
       <a href="{% url 'tidrapport' %}" class="{% if '/tid/' in p %}aktiv{% endif %}">Tidrapport</a>
-      <a href="{% url 'uppdrag_lista' %}" class="{% if '/uppdrag/' in p %}aktiv{% endif %}">Uppdrag</a>
+      <a href="{% url 'uppdrag_lista' %}" class="{% if '/uppdrag/' in p and 'uppfoljning' not in p %}aktiv{% endif %}">Uppdrag</a>
+      <a href="{% url 'uppdragsuppfoljning' %}" class="{% if '/uppdrag/uppfoljning' in p %}aktiv{% endif %}">Uppdragsuppföljning</a>
       <a href="{% url 'kund_lista' %}" class="{% if '/kunder/' in p or 'register/kunder' in p %}aktiv{% endif %}">Kunder</a>
       <a href="{% url 'register_lista' 'artiklar' %}" class="{% if 'register/artiklar' in p %}aktiv{% endif %}">Artiklar</a>
     </details>

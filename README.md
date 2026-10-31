@@ -164,6 +164,20 @@ Lönedelen är ett stöd för enkla löner (t.ex. ägarlön). Semesterlöneskuld
 - `templates/`: HTML-sidorna, inklusive fakturalayouten `verksamhet/faktura_utskrift.html`
 - `config/datadir.py`: styr var databasen ligger
 
+## Planering, bokslut och deklarationer
+
+- **Planering → Likviditet:** saldot på företagskontot vecka för vecka, med fakturor, löner, skatter och moms.
+- **Planering → Skatt och utdelning:** skatteprognos mot F-skatt och gränsbelopp enligt 3:12-reglerna.
+- **Planering → Viktiga datum:** Skatteverkets och Bolagsverkets datum, även som kalenderfil.
+- **Försäljning → Uppdragsuppföljning:** beläggning, intäkt per kund och uppdrag som tar slut.
+- **Fakturor:** "Visa PDF" och "Skicka med e-post" (ett utkast som öppnas i Outlook). Förfallna fakturor får
+  knappar för påminnelse.
+- **Inköp:** bifoga en PDF så läses leverantör, datum, belopp och moms av.
+- **Moms och arbetsgivardeklaration:** "Ladda ner fil till Skatteverket" och ladda upp i deras e-tjänst.
+- **Bokföring → Bokslut:** checklista, periodiseringar, avskrivningar (Bokföring → Inventarier), skatt, årets
+  resultat och underlag till inkomstdeklarationen.
+- **Bokföring → Årsarkiv:** allt för ett år i en zip-fil, som sparas i sju år.
+
 ## Behandlingshistorik, tester och systemdokumentation
 
 - **Inställningar → Behandlingshistorik** visar alla registreringar, ändringar och raderingar: vem som gjorde vad,

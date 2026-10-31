@@ -48,7 +48,7 @@
     <div class="kort-delad">
       <div>
         <div class="kort-rubrik"><h2>Likviditetsprognos</h2></div>
-        <div class="kort-under">{{ prognos.0.etikett }}–{{ prognos.11.etikett }} · företagskontot plus obetalda kund- och leverantörsfakturor, moms och lönskatter på förfallodag</div>
+        <div class="kort-under">{{ prognos.0.etikett }}–{{ prognos.11.etikett }} · fakturor, ofakturerad tid, budget, löner, skatter och moms · <a href="{% url 'likviditet' %}">detaljer</a></div>
         <div id="prognosdiagram"></div>
       </div>
       <div class="sida">

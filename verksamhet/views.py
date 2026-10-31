@@ -490,3 +490,23 @@ def sok(request):
         for a in Anstalld.objects.filter(Q(fornamn__icontains=q) | Q(efternamn__icontains=q))[:10]:
             traffar.append(("Anställd", a.namn, a.get_absolute_url()))
     return render(request, "verksamhet/sok.html", {"q": q, "traffar": traffar})
+
+
+def uppdragsuppfoljning(request):
+    from . import uppfoljning
+    idag = timezone.localdate()
+    try:
+        ar = int(request.GET.get("ar", idag.year))
+    except ValueError:
+        ar = idag.year
+    bel = uppfoljning.belaggning(ar, idag)
+    kunder, total = uppfoljning.per_kund(ar)
+    MAN = ["Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"]
+    for r in bel["manader"]:
+        r["namn"] = MAN[r["manad"] - 1]
+    diagram = {"kategorier": [MAN[r["manad"] - 1] for r in bel["manader"]],
+               "timmar": [float(r["timmar"]) for r in bel["manader"]],
+               "mojliga": [float(r["mojliga"]) for r in bel["manader"]]}
+    return render(request, "verksamhet/uppdragsuppfoljning.html", {
+        "ar": ar, "ar_lista": [idag.year, idag.year - 1, idag.year - 2], "bel": bel, "kunder": kunder,
+        "total": total, "status": uppfoljning.uppdrag_status(idag), "diagram": diagram})

@@ -3,6 +3,33 @@
 Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
 fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
 
+## 2026.10.31-4
+
+Nio nya funktioner:
+- **Årsarkiv** (Bokföring → Årsarkiv): zip med SIE 4, PDF-rapporter, bilagor, behandlingshistorik och
+  systemdokumentation. Kontrollsummor per fil. Kopia sparas i OneDrive.
+- **Filer till Skatteverket:** momsdeklaration (eSKDUpload 6.0) och arbetsgivardeklaration (XML, schema 1.1).
+- **Likviditetsprognos** (Planering → Likviditet), vecka för vecka i upp till 52 veckor.
+- **Bokslut** (Bokföring → Bokslut):
+  - checklista,
+  - periodiseringar med återföring,
+  - inventarier och avskrivningar,
+  - bolagsskatt och årets resultat,
+  - underlag till INK2R och INK2S.
+- **Fakturor som PDF och e-postutkast** (.eml för Outlook), OCR i samma format som Visma, påminnelser med
+  dröjsmålsränta.
+- **Avläsning av leverantörsfakturor och kvitton i PDF.**
+- **Viktiga datum** (Planering → Viktiga datum) med kalenderfil (.ics).
+- **Skatt och utdelning** (Planering → Skatt och utdelning): skatteprognos mot F-skatt och gränsbelopp enligt
+  3:12-reglerna från 2026.
+- **Uppdragsuppföljning** (Försäljning → Uppdragsuppföljning): beläggning, intäkt per kund och varning när
+  ett uppdrag tar slut utan att något annat tar vid. Varningen visas även på översikten.
+
+Övrigt:
+- Menyn "Budget och prognos" heter nu "Planering".
+- Företagsuppgifter har nya fält för F-skatt, ägarandel och sparat utdelningsutrymme.
+- 146 automatiska tester.
+
 ## 2026.10.31-3
 
 - **Webbserver:** programmet körs med waitress i stället för Djangos utvecklingsserver. Felsidor med

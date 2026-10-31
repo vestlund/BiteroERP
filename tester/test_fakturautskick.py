@@ -14,7 +14,7 @@ from register.models import Foretag
 from verksamhet import fakturadokument as fd
 from verksamhet.models import Faktura
 
-from .grund import anvandare, d, datum, faktura, grunddata
+from .grund import anvandare, datum, faktura, grunddata
 
 
 def pdftext(data):

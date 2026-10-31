@@ -58,6 +58,7 @@ urlpatterns = [
     path("tid/<int:pk>/", v.tidpost_andra, name="tidpost_andra"),
     path("tid/export.csv", v.tid_export_csv, name="tid_export_csv"),
     path("uppdrag/", v.uppdrag_lista, name="uppdrag_lista"),
+    path("uppdrag/uppfoljning/", v.uppdragsuppfoljning, name="uppdragsuppfoljning"),
     path("uppdrag/nytt/", v.uppdrag_form, name="uppdrag_nytt"),
     path("uppdrag/<int:pk>/", v.uppdrag_detalj, name="uppdrag_detalj"),
     path("uppdrag/<int:pk>/andra/", v.uppdrag_form, name="uppdrag_andra"),

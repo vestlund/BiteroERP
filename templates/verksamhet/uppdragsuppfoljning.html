@@ -1,0 +1,55 @@
+{% extends "base.html" %}{% load kr static %}
+{% block titel %}Uppdragsuppföljning{% endblock %}
+{% block innehall %}
+<div class="rubrikrad"><h1>Uppdragsuppföljning</h1>
+  <form method="get" class="filter"><select name="ar" onchange="this.form.submit()">{% for a in ar_lista %}<option value="{{ a|stringformat:'d' }}" {% if a == ar %}selected{% endif %}>{{ a|stringformat:"d" }}</option>{% endfor %}</select></form></div>
+
+<h2>Uppdrag</h2>
+<table>
+  <thead><tr><th>Uppdrag</th><th>Kund</th><th class="tal">Timpris</th><th>Slutar</th><th class="tal">Timmar 30 dagar</th><th class="tal">Använt av budget</th><th></th></tr></thead>
+  <tbody>{% for r in status %}
+    <tr><td><a href="{{ r.uppdrag.get_absolute_url }}">{{ r.uppdrag.namn }}</a></td><td>{{ r.uppdrag.kund.namn }}</td>
+      <td class="tal">{{ r.uppdrag.pris|kr:0 }}</td>
+      <td class="ingen-radbrytning">{% if r.uppdrag.slutdatum %}{{ r.uppdrag.slutdatum }}{% if r.dagar_kvar >= 0 %} <small class="dimmad">om {{ r.dagar_kvar }} d</small>{% endif %}{% else %}<span class="dimmad">tillsvidare</span>{% endif %}</td>
+      <td class="tal">{{ r.timmar_30|kr:1 }}</td>
+      <td class="tal">{% if r.budget_procent is not None %}{{ r.budget_procent }} %{% else %}–{% endif %}</td>
+      <td>{% if r.varning %}<span class="status forfallen">{{ r.varning }}</span>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="7">Inga aktiva uppdrag.</td></tr>{% endfor %}</tbody>
+</table>
+<p class="liten-text dimmad">Ange slutdatum på uppdragen så varnar systemet 60 dagar innan ett uppdrag tar slut utan att något annat tar vid.</p>
+
+<div class="dash">
+<section class="kort">
+  <div class="kort-rubrik"><h2>Beläggning {{ ar|stringformat:"d" }}: {{ bel.procent }} %</h2></div>
+  <div class="kort-under">{{ bel.timmar|kr:0 }} fakturerbara timmar av {{ bel.mojliga|kr:0 }} möjliga (arbetsdagar × 8 h)</div>
+  <div id="belaggningsdiagram"></div>
+  <table class="liten-text">
+    <thead><tr>{% for r in bel.manader %}<th class="tal">{{ r.namn }}</th>{% endfor %}</tr></thead>
+    <tbody><tr>{% for r in bel.manader %}<td class="tal">{{ r.procent }} %</td>{% endfor %}</tr></tbody>
+  </table>
+</section>
+<section class="kort">
+  <div class="kort-rubrik"><h2>Intäkt per kund {{ ar|stringformat:"d" }}</h2></div>
+  <table>
+    <thead><tr><th>Kund</th><th class="tal">Fakturerat</th><th class="tal">Andel</th><th class="tal">Timmar</th><th class="tal">Kr/tim</th><th class="tal">{{ ar|add:"-1"|stringformat:"d" }}</th></tr></thead>
+    <tbody>{% for r in kunder %}
+      <tr><td><a href="{% url 'kund_detalj' r.kund.pk %}">{{ r.kund.namn }}</a></td><td class="tal">{{ r.i_ar|kr:0 }}</td>
+        <td class="tal">{{ r.andel }} %</td><td class="tal">{{ r.timmar|kr:0 }}</td>
+        <td class="tal">{% if r.snittpris %}{{ r.snittpris|kr:0 }}{% endif %}</td><td class="tal dimmad">{{ r.fg_ar|kr:0 }}</td></tr>
+    {% empty %}<tr><td colspan="6">Inga fakturor.</td></tr>{% endfor %}</tbody>
+    <tfoot><tr><td>Totalt</td><td class="tal"><b>{{ total|kr:0 }}</b></td><td colspan="4"></td></tr></tfoot>
+  </table>
+  <p class="liten-text dimmad">Fakturerat exkl. moms. Kr/tim = fakturerat delat med rapporterade fakturerbara timmar.</p>
+</section>
+</div>
+{{ diagram|json_script:"bd" }}
+{% endblock %}
+{% block skript %}
+<script src="{% static 'diagram.js' %}"></script>
+<script>
+const bd = JSON.parse(document.getElementById("bd").textContent);
+stapeldiagram(document.getElementById("belaggningsdiagram"), { kategorier: bd.kategorier, hojd: 230, serier: [
+  { namn: "Möjliga timmar", varden: bd.mojliga, farg: "#d0d5dd" },
+  { namn: "Fakturerbara timmar", varden: bd.timmar, farg: "#2a78d6" }] });
+</script>
+{% endblock %}

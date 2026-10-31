@@ -200,6 +200,12 @@ bara bokföras en gång.
   - Fritt eget kapital beräknas från nästa års ingående balanser. Beräkningen är ett planeringsstöd och
     ersätter inte K10.
 
+- **Uppdragsuppföljning** (Försäljning → Uppdragsuppföljning):
+  - Beläggning är fakturerbara timmar mot arbetsdagar × 8 timmar per månad.
+  - Intäkt per kund är fakturerat exklusive moms.
+  - Aktiva uppdrag visas med slutdatum. Systemet varnar 60 dagar innan ett uppdrag tar slut om inget annat
+    aktivt uppdrag tar vid, och när slutdatumet har passerat.
+
 ## 5. Verifieringskedjor
 
 Varje affärshändelse kan följas från underlag till rapport och tillbaka.

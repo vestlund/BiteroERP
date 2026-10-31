@@ -89,6 +89,10 @@ def oversikt(request):
             attgora.append(("gul", "₪", f"{n} lönekörning ej bokförd", "Kontrollera och bokför", "lonekorningar"))
     except Exception:
         pass
+    from .uppfoljning import varningar
+    for r in varningar(idag):
+        attgora.append(("gul", "⏳", f"Uppdrag {r['uppdrag'].namn} ({r['uppdrag'].kund.namn})", r["varning"],
+                        "uppdragsuppfoljning"))
     if not foretag.orgnr:
         attgora.append(("gul", "⚙", "Fyll i företagsuppgifter", "Org.nr, momsnummer och bankgiro", "foretag"))
 

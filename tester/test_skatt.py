@@ -1,6 +1,5 @@
 """Skatteprognos och gränsbelopp enligt 3:12-reglerna från 2026."""
 
-from decimal import Decimal
 
 from django.test import TestCase
 from django.urls import reverse
