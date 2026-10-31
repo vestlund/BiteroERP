@@ -93,7 +93,13 @@ Positivt belopp = debet, negativt = kredit.
 | 3740 Öres- och kronutjämning | − Öresavrundning |
 
 Moms räknas per momssats på summan av raderna och avrundas till hela ören. Att betala avrundas till hela kronor.
-Fakturanummer tilldelas när fakturan slutförs, i obruten följd. Makulering skapar en rättelse.
+Fakturanummer tilldelas när fakturan slutförs, i obruten följd. Samtidigt sätts OCR-numret: fakturanumret plus
+längdsiffra plus kontrollsiffra (Luhn), samma format som Visma. Makulering skapar en rättelse.
+
+Fakturan skapas som PDF. "Skicka med e-post" ger ett e-postutkast (.eml) med PDF:en bifogad, som öppnas i
+Outlook och skickas därifrån. För förfallna fakturor kan en påminnelse skapas. Den visar upplupen
+dröjsmålsränta enligt räntelagen (referensräntan + 8 procentenheter per kalenderhalvår) och en valfri
+påminnelseavgift. Påminnelseavgiften är högst 60 kr och får bara tas ut om den är avtalad i förväg.
 
 ### Inbetalning av kundfaktura (serie I)
 Debet bankkonto (normalt 1930), kredit 1510, med fakturans belopp att betala.

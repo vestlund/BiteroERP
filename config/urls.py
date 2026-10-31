@@ -69,6 +69,8 @@ urlpatterns = [
     path("fakturor/export.csv", v.fakturor_csv, name="fakturor_csv"),
     path("fakturor/<int:pk>/", v.faktura_detalj, name="faktura_detalj"),
     path("fakturor/<int:pk>/utskrift/", v.faktura_utskrift, name="faktura_utskrift"),
+    path("fakturor/<int:pk>/epost/", v.faktura_epost, name="faktura_epost"),
+    path("fakturor/<int:pk>/paminnelse/", v.faktura_paminnelse, name="faktura_paminnelse"),
     path("fakturor/<int:pk>/<str:atgard>/", v.faktura_atgard, name="faktura_atgard"),
     # bokföring
     path("bokforing/", b.bokforing_start, name="bokforing"),

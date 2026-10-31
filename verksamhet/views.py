@@ -13,6 +13,7 @@ from django.views.decorators.http import require_POST
 
 from register.models import Foretag, Konto, Kund
 
+from . import fakturadokument
 from .forms import (BetaldForm, FakturaHuvudForm, FakturaradFormSet, FaktureraTidForm, TidcellForm,
                     TidpostForm, UppdragForm)
 from .models import Faktura, Fakturarad, Tidpost, Uppdrag, avrunda
@@ -302,6 +303,9 @@ def faktura_detalj(request, pk):
         "faktura": faktura, "huvud": huvud, "rader": rader, "sum": faktura.summering(),
         "betald_form": BetaldForm(initial={"betaldatum": timezone.localdate()}),
         "artiklar_json": _artiklar_json(),
+        "drojsmal": fakturadokument.drojsmalsranta(faktura.summering()["att_betala"], faktura.forfallodatum,
+                                                   timezone.localdate()) if faktura.forfallen else None,
+        "mottagare": fakturadokument.mottagare(faktura.kund)[0],
     })
 
 
@@ -371,11 +375,58 @@ def faktura_atgard(request, pk, atgard):
 
 
 def faktura_utskrift(request, pk):
-    f = get_object_or_404(Faktura.objects.select_related("kund"), pk=pk)
+    """Fakturan som PDF: originalet om det finns (Visma), annars skapad här. ?html=1 ger utskriftssidan."""
+    f = get_object_or_404(Faktura.objects.select_related("kund__betalningsvillkor"), pk=pk)
     if (original := f.bilagor.order_by("-uppladdad").first()) and "genererad" not in request.GET:
         return redirect("bilaga", pk=original.pk)
-    return render(request, "verksamhet/faktura_utskrift.html", {
-        "f": f, "sum": f.summering(), "rader": f.rader.all()})
+    if "html" in request.GET:
+        return render(request, "verksamhet/faktura_utskrift.html", {
+            "f": f, "sum": f.summering(), "rader": f.rader.all()})
+    data = fakturadokument.faktura_pdf(f, Foretag.hamta())
+    return _pdfsvar(data, f"Faktura_{f.nummer or 'utkast'}.pdf", "ladda" in request.GET)
+
+
+def _pdfsvar(data, filnamn, som_bilaga=False):
+    svar = HttpResponse(data, content_type="application/pdf")
+    svar["Content-Disposition"] = f'{"attachment" if som_bilaga else "inline"}; filename="{filnamn}"'
+    return svar
+
+
+def _emlsvar(data, filnamn):
+    svar = HttpResponse(data, content_type="message/rfc822")
+    svar["Content-Disposition"] = f'attachment; filename="{filnamn}"'
+    return svar
+
+
+@require_POST
+def faktura_epost(request, pk):
+    """E-postutkast (.eml) med fakturan bifogad. Öppnas i Outlook som ett nytt mejl."""
+    f = get_object_or_404(Faktura.objects.select_related("kund"), pk=pk)
+    if not f.nummer:
+        messages.error(request, "Slutför fakturan innan den skickas.")
+        return redirect(f)
+    foretag = Foretag.hamta()
+    original = f.bilagor.order_by("-uppladdad").first()
+    pdf = original.fil.read() if original else fakturadokument.faktura_pdf(f, foretag)
+    data = fakturadokument.faktura_eml(f, foretag, pdf)
+    Faktura.objects.filter(pk=f.pk).update(utskickad=timezone.now())
+    return _emlsvar(data, f"Faktura_{f.nummer}.eml")
+
+
+@require_POST
+def faktura_paminnelse(request, pk):
+    f = get_object_or_404(Faktura.objects.select_related("kund"), pk=pk, status=Faktura.SKICKAD)
+    foretag = Foretag.hamta()
+    idag = timezone.localdate()
+    try:
+        avgift = Decimal((request.POST.get("avgift") or "0").replace(",", "."))
+    except Exception:
+        avgift = Decimal(0)
+    pdf, _, _ = fakturadokument.paminnelse_pdf(f, foretag, idag, max(avgift, Decimal(0)))
+    Faktura.objects.filter(pk=f.pk).update(paminnelser=f.paminnelser + 1, senaste_paminnelse=idag)
+    if request.POST.get("format") == "pdf":
+        return _pdfsvar(pdf, f"Paminnelse_faktura_{f.nummer}.pdf", True)
+    return _emlsvar(fakturadokument.paminnelse_eml(f, foretag, pdf), f"Paminnelse_faktura_{f.nummer}.eml")
 
 
 # ---------------------------------------------------------------- export

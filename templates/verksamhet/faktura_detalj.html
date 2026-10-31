@@ -5,7 +5,9 @@
     <span class="status {{ faktura.status }}">{{ faktura.get_status_display }}</span>
     {% if faktura.forfallen %}<span class="status forfallen">förfallen</span>{% endif %}</h1>
   <div class="knappar">
-    <a href="{% url 'faktura_utskrift' faktura.pk %}" role="button" class="outline" target="_blank">Visa / skriv ut PDF</a>
+    <a href="{% url 'faktura_utskrift' faktura.pk %}" role="button" class="outline" target="_blank">Visa PDF</a>
+    {% if faktura.nummer %}<form method="post" action="{% url 'faktura_epost' faktura.pk %}">{% csrf_token %}
+      <button class="outline" title="Skapar ett e-postutkast med fakturan bifogad{% if mottagare %} till {{ mottagare }}{% endif %}. Öppna filen så öppnas den i Outlook.">Skicka med e-post</button></form>{% endif %}
     {% if faktura.status == "utkast" %}
       <form method="post" action="{% url 'faktura_atgard' faktura.pk 'slutfor' %}">{% csrf_token %}
         <button onclick="return confirm('Slutför fakturan? Den får nummer och låses.')">Slutför och ge nummer</button></form>
@@ -23,6 +25,21 @@
     {% endif %}
   </div>
 </div>
+
+{% if faktura.utskickad or faktura.paminnelser %}<p class="liten-text dimmad">{% if faktura.utskickad %}E-postutkast skapat {{ faktura.utskickad|date:"Y-m-d H:i" }}.{% endif %}
+  {% if faktura.paminnelser %}Påminnelser: {{ faktura.paminnelser }}, senast {{ faktura.senaste_paminnelse }}.{% endif %}</p>{% endif %}
+{% if drojsmal %}
+<article class="varning">
+  <h3 class="liten-rubrik">Fakturan förföll för {{ drojsmal.1 }} dagar sedan</h3>
+  <p class="liten-text">Upplupen dröjsmålsränta enligt räntelagen (referensräntan + 8 %): <b>{{ drojsmal.0|kr:0 }} kr</b>.</p>
+  <form method="post" action="{% url 'faktura_paminnelse' faktura.pk %}" class="knappar">{% csrf_token %}
+    <label class="liten-text">Påminnelseavgift <input name="avgift" value="0" inputmode="decimal" style="width:6rem"
+      title="Högst 60 kr, och bara om det är avtalat i förväg"></label>
+    <button name="format" value="eml">Skicka påminnelse med e-post</button>
+    <button name="format" value="pdf" class="outline">Påminnelse som PDF</button>
+  </form>
+</article>
+{% endif %}
 
 {% with original=faktura.bilagor.all|first %}
 {% if original %}

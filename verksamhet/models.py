@@ -113,6 +113,9 @@ class Faktura(models.Model):
     fran_visma = models.BooleanField("importerad från Visma", default=False, editable=False,
                                      help_text="Bokföringen finns i Visma och skapas inte här")
     ocr = models.CharField("OCR", max_length=30, blank=True)
+    utskickad = models.DateTimeField("e-post skapad", null=True, blank=True, editable=False)
+    paminnelser = models.PositiveSmallIntegerField("antal påminnelser", default=0, editable=False)
+    senaste_paminnelse = models.DateField(null=True, blank=True, editable=False)
 
     class Meta:
         verbose_name = "faktura"
@@ -168,6 +171,9 @@ class Faktura(models.Model):
         if not self.forfallodatum:
             dagar = self.kund.betalningsvillkor.dagar if self.kund.betalningsvillkor else 30
             self.forfallodatum = self.fakturadatum + timezone.timedelta(days=dagar)
+        if not self.ocr:
+            from .fakturadokument import ocr_for
+            self.ocr = ocr_for(self.nummer)
         self.status = self.SKICKAD
         self.save()
 

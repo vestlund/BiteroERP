@@ -111,3 +111,4 @@ table.nyckelvarden th { width: 12rem; font-weight: 600; }
 .ingen-radbrytning { white-space: nowrap; }
 @media print { .rubrikrad button, .rubrikrad [role=button] { display: none !important; } .dokument { max-width: none; } }
 .negativ { color: #b42318; }
+article.varning { border-left: 4px solid #f79009; background: #fffaeb; }
