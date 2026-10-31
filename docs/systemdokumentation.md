@@ -237,6 +237,10 @@ Från en verifikation finns länkar till faktura, bilaga, bankpost och rättelse
   - en innehållsförteckning med SHA-256 per fil.
 
   En kopia sparas automatiskt i `bitero-erp-backups\arsarkiv\`. Arkivet är läsbart utan programmet.
+- **Uppdateringar och sårbarheter:** beroendenas versioner är låsta i `uv.lock`. GitHub kontrollerar varje
+  vecka och vid varje ändring att inget beroende har en känd sårbarhet (pip-audit), och Dependabot föreslår
+  uppdateringar. En uppdatering tas in först när alla automatiska tester gått igenom, och registreras som ny
+  version i behandlingshistoriken vid nästa start.
 - **Behörighet:** endast inloggade användare. Lösenord sparas som hash och visas aldrig i historiken.
 - **Claude-koppling (MCP):** Claude i Claudes skrivbordsapp kan registrera kvitton och leverantörsfakturor
   via en lokal MCP-server (`manage.py mcp`). Den startas av appen på samma dator och lyssnar inte på nätverket.

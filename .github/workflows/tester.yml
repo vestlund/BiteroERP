@@ -3,6 +3,10 @@ name: Tester
 on:
   push:
   pull_request:
+  schedule:
+    # Varje måndag 06:00 (UTC), så att nya sårbarheter upptäcks även när koden inte ändras
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
 
 jobs:
   tester:
@@ -14,3 +18,13 @@ jobs:
         env:
           BITERO_DATA_DIR: ${{ runner.temp }}/bitero-erp-data
         run: uv run python manage.py test tester
+
+  sakerhet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Sök efter kända sårbarheter i beroendena (pip-audit)
+        run: |
+          uv export --frozen --no-dev --format requirements-txt -o krav.txt
+          uvx pip-audit -r krav.txt --disable-pip --strict --desc

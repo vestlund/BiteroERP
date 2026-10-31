@@ -1,0 +1,28 @@
+# Dependabot föreslår uppdateringar av beroenden som pull requests.
+# Testerna och säkerhetskontrollen körs på varje förslag innan det slås ihop.
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Europe/Stockholm"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "Beroenden"
+    groups:
+      # Små uppdateringar samlas i en pull request i veckan
+      sma-uppdateringar:
+        update-types: ["minor", "patch"]
+    ignore:
+      # Byte till Django 6 görs som ett eget projekt (5.2 LTS har stöd till april 2028)
+      - dependency-name: "django"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "GitHub Actions"

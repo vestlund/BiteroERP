@@ -83,6 +83,9 @@ GitHub till `C:\kod\bitero-erp` och tar med Visma-filerna och säkerhetskopiorna
 - **Hämta uppdateringar:** `git pull` i programmappen, sedan starta som vanligt. Testerna körs automatiskt.
 - **Se historiken:** `git log` eller på GitHub. Där körs testerna också vid varje uppladdning (fliken Actions).
 - Databaser, säkerhetskopior, Visma-filer och PDF:er checkas aldrig in (se `.gitignore`).
+- **Säkerhetsuppdateringar:** GitHub söker varje vecka efter kända sårbarheter i beroendena (pip-audit) och
+  Dependabot föreslår uppdateringar som pull requests. Om testerna är gröna: tryck **Merge** på GitHub och
+  kör sedan `git pull` här. Kontroll lokalt: `uvx pip-audit`.
 
 ## Bokföra kvitton med Claude
 
