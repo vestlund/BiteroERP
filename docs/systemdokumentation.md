@@ -188,6 +188,18 @@ bara bokföras en gång.
   med omsättning upp till 40 miljoner kr (den 12:e, i januari och augusti den 17:e, flyttat till närmaste vardag),
   samt årsstämma, årsredovisning och inkomstdeklaration. Listan kan hämtas som kalenderfil (.ics).
 
+- **Skatt och utdelning** (Planering → Skatt och utdelning):
+  - Bolagsskatt 20,6 % på prognostiserat resultat (bokfört hittills plus huvudbudgeten för resten av året),
+    jämfört med debiterad F-skatt. Vid kvarskatt över 30 000 kr visas en påminnelse om fyllnadsinbetalning
+    senast 12 februari.
+  - Gränsbeloppet för utdelning enligt 3:12-reglerna från 2026:
+    - grundbelopp: 4 inkomstbasbelopp för året före, efter ägarandel,
+    - lönebaserat utrymme: 50 % av (bolagets löner året före × ägarandel − 8 inkomstbasbelopp), med tak
+      50 × egen lön,
+    - sparat utdelningsutrymme, utan ränteuppräkning.
+  - Fritt eget kapital beräknas från nästa års ingående balanser. Beräkningen är ett planeringsstöd och
+    ersätter inte K10.
+
 ## 5. Verifieringskedjor
 
 Varje affärshändelse kan följas från underlag till rapport och tillbaka.

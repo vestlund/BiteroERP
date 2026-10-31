@@ -49,6 +49,9 @@ def startsaldo(idag):
 
 
 def _senaste_fskatt():
+    foretag = Foretag.hamta()
+    if foretag.fskatt_manad:
+        return foretag.fskatt_manad
     t = Transaktion.objects.filter(konto_id=2518, belopp__gt=0).order_by("-verifikation__datum").first()
     return t.belopp if t else NOLL
 

@@ -21,6 +21,7 @@ urlpatterns = [
     # planering
     path("planering/likviditet/", pl.likviditetssida, name="likviditet"),
     path("planering/viktiga-datum/", pl.fristsida, name="frister"),
+    path("planering/skatt/", pl.skattesida, name="skatt"),
     path("planering/viktiga-datum/frister.ics", pl.frister_ics, name="frister_ics"),
     # budget
     path("budget/", bu.uppfoljning, name="budget_aktuell"),

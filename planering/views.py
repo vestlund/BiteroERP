@@ -48,3 +48,36 @@ def frister_ics(request):
     svar = HttpResponse(fr.ics(lista, foretag), content_type="text/calendar; charset=utf-8")
     svar["Content-Disposition"] = 'attachment; filename="frister.ics"'
     return svar
+
+
+def skattesida(request):
+    from decimal import Decimal, InvalidOperation
+
+    from . import skatt
+    idag = timezone.localdate()
+    foretag = Foretag.hamta()
+    if request.method == "POST":
+        from django.contrib import messages
+        from django.shortcuts import redirect
+        try:
+            foretag.fskatt_manad = Decimal(request.POST["fskatt_manad"].replace(" ", "").replace(",", ".")) \
+                if request.POST.get("fskatt_manad", "").strip() else None
+            foretag.agarandel = Decimal(request.POST.get("agarandel", "100").replace(",", "."))
+            foretag.sparat_utdelningsutrymme = Decimal(
+                (request.POST.get("sparat") or "0").replace(" ", "").replace(",", "."))
+            if not (0 < foretag.agarandel <= 100):
+                raise InvalidOperation
+            foretag.save(update_fields=["fskatt_manad", "agarandel", "sparat_utdelningsutrymme"])
+            messages.success(request, "Uppgifterna sparades.")
+        except (InvalidOperation, KeyError):
+            messages.error(request, "Kontrollera beloppen (ägarandel 1–100 %).")
+        return redirect("skatt")
+    egen_lon = None
+    if request.GET.get("egen_lon"):
+        try:
+            egen_lon = Decimal(request.GET["egen_lon"].replace(" ", "").replace(",", "."))
+        except InvalidOperation:
+            egen_lon = None
+    return render(request, "planering/skatt.html", {
+        "prognos": skatt.skatteprognos(idag), "utd": skatt.utdelning(idag, egen_lon=egen_lon),
+        "foretag": foretag, "egen_lon": egen_lon, "idag": idag})

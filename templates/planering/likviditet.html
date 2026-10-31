@@ -18,7 +18,7 @@
       <div class="belopp {% if lp.lagsta.saldo < 0 %}negativ{% endif %}">{{ lp.lagsta.saldo|kr }}</div></div>{% endif %}
     {% with sista=lp.veckor|last %}<div class="nyckeltal"><div class="etikett">Saldo vecka {{ sista.vecka }}</div><div class="belopp">{{ sista.saldo|kr }}</div></div>{% endwith %}
     <p class="liten-text">Antaganden: förfallna kundfakturor betalas den här veckan, ofakturerad tid faktureras vid månadsskiftet,
-      budgeterade intäkter faktureras vid varje månads slut med 30 dagars betalning, löner {% if lp.lon %}{{ lp.lon.kalla }} (netto {{ lp.lon.netto|kr:0 }} kr den {{ lp.lon.dag }}:e, skatt och avgifter {{ lp.lon.skatter|kr:0 }} kr){% else %}saknas{% endif %}, {% if lp.fskatt %}F-skatt som senaste debiteringen ({{ lp.fskatt|kr:0 }} kr){% else %}ingen F-skatt (hittades inte på konto 2518){% endif %} och 25 % moms på prognosfakturor.
+      budgeterade intäkter faktureras vid varje månads slut med 30 dagars betalning, löner {% if lp.lon %}{{ lp.lon.kalla }} (netto {{ lp.lon.netto|kr:0 }} kr den {{ lp.lon.dag }}:e, skatt och avgifter {{ lp.lon.skatter|kr:0 }} kr){% else %}saknas{% endif %}, {% if lp.fskatt %}F-skatt {{ lp.fskatt|kr:0 }} kr per månad{% else %}ingen F-skatt (fyll i debiterad F-skatt under <a href="{% url 'foretag' %}">Företagsuppgifter</a>){% endif %} och 25 % moms på prognosfakturor.
       Budgeterade kostnader räknas utan personal och skatter, som ingår separat.</p>
   </section>
 </div>

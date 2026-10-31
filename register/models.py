@@ -216,6 +216,14 @@ class Foretag(models.Model):
         Artikel, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
         help_text="Förvald artikel för nya uppdrag",
     )
+    fskatt_manad = models.DecimalField(
+        "debiterad F-skatt per månad", max_digits=12, decimal_places=0, null=True, blank=True,
+        help_text="Enligt Skatteverkets beslut om preliminärskatt. Används i likviditetsprognosen och skatteprognosen.")
+    agarandel = models.DecimalField("din ägarandel %", max_digits=5, decimal_places=2, default=100,
+                                    help_text="Används för gränsbeloppet enligt 3:12-reglerna")
+    sparat_utdelningsutrymme = models.DecimalField(
+        "sparat utdelningsutrymme", max_digits=12, decimal_places=0, default=0,
+        help_text="Enligt din senaste K10-blankett (rad 'sparat utdelningsutrymme')")
 
     class Meta:
         verbose_name = "företagsuppgifter"

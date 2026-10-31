@@ -193,6 +193,7 @@ def foretag(request):
         ("Betalning till dig", ["bankgiro", "plusgiro", "iban", "bic", "drojsmalsranta"]),
         ("Fakturering", ["var_referens", "nasta_fakturanummer", "standardartikel"]),
         ("Bokföring", ["momsperiod", "kundfordringskonto", "last_tom"]),
+        ("Skatt och ägare", ["fskatt_manad", "agarandel", "sparat_utdelningsutrymme"]),
     ]
     return render(request, "register/form.html", {
         "cfg": {"titel": "Företagsuppgifter", "singular": "företagsuppgifter"}, "typ": None, "obj": obj,

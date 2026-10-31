@@ -1,0 +1,59 @@
+{% extends "base.html" %}{% load kr %}
+{% block titel %}Skatt och utdelning{% endblock %}
+{% block innehall %}
+<h1>Skatt och utdelning</h1>
+
+<div class="dash">
+<section class="kort">
+  <div class="kort-rubrik"><h2>Bolagsskatt {{ prognos.ar|stringformat:"d" }}</h2></div>
+  <table>
+    <tr><td>Resultat hittills (bokfört t.o.m. {{ idag|date:"j M" }})</td><td class="tal">{{ prognos.hittills|kr:0 }}</td></tr>
+    <tr><td>Resten av året enligt {{ prognos.budget|default:"budget (saknas)" }}</td><td class="tal">{{ prognos.rest|kr:0 }}</td></tr>
+    <tr class="summa"><td>Prognos resultat före skatt</td><td class="tal">{{ prognos.prognos|kr:0 }}</td></tr>
+    <tr><td>Bolagsskatt 20,6 %</td><td class="tal">{{ prognos.skatt|kr:0 }}</td></tr>
+    <tr><td>Debiterad F-skatt för året{% if prognos.fskatt_manad %} ({{ prognos.fskatt_manad|kr:0 }} kr/mån){% endif %}</td><td class="tal">{{ prognos.fskatt|kr:0 }}</td></tr>
+    <tr class="summa"><td>{% if prognos.skillnad > 0 %}Beräknad kvarskatt{% else %}Beräknad överskjutande skatt{% endif %}</td>
+      <td class="tal {% if prognos.skillnad > 30000 %}negativ{% endif %}">{{ prognos.skillnad|kr:0 }}</td></tr>
+  </table>
+  {% if not prognos.fskatt_manad %}<p class="liten-text">Fyll i debiterad F-skatt nedan för att jämföra.</p>
+  {% elif prognos.skillnad > 30000 %}<p class="liten-text">Kvarskatten blir mer än 30 000 kr. Gör en extra inbetalning till skattekontot
+    senast <b>{{ prognos.fyllnad_senast }}</b> för att undvika kostnadsränta, eller ansök om ändrad preliminärskatt hos Skatteverket.</p>
+  {% elif prognos.skillnad < -30000 %}<p class="liten-text">F-skatten är högre än prognosen. Du kan ansöka om sänkt preliminärskatt hos Skatteverket.</p>{% endif %}
+  <p class="liten-text dimmad">Förenklad prognos: periodiseringsfond, ej avdragsgilla kostnader och underskott ingår inte. Se bokslutet för den slutliga beräkningen.</p>
+</section>
+
+<section class="kort">
+  <div class="kort-rubrik"><h2>Utdelning {{ utd.i_ar.ar|stringformat:"d" }}</h2></div>
+  <p class="liten-text">Gränsbelopp enligt 3:12-reglerna, ägarandel {{ utd.agarandel|kr:0 }} %.</p>
+  <table>
+    <tr><td>Grundbelopp (4 × inkomstbasbelopp {{ utd.i_ar.ibb|kr:0 }})</td><td class="tal">{{ utd.i_ar.grundbelopp|kr:0 }}</td></tr>
+    <tr><td>Lönebaserat utrymme: 50 % av (löner {{ utd.i_ar.ar|add:"-1"|stringformat:"d" }} {{ utd.i_ar.loneunderlag|kr:0 }} − {{ utd.i_ar.loneavdrag|kr:0 }})
+      {% if utd.i_ar.tak is not None %}<br><small class="dimmad">tak 50 × egen lön = {{ utd.i_ar.tak|kr:0 }}</small>{% endif %}</td><td class="tal">{{ utd.i_ar.lonebaserat|kr:0 }}</td></tr>
+    <tr><td>Sparat utdelningsutrymme</td><td class="tal">{{ utd.i_ar.sparat|kr:0 }}</td></tr>
+    <tr class="summa"><td>Gränsbelopp (beskattas med 20 %)</td><td class="tal">{{ utd.i_ar.summa|kr:0 }}</td></tr>
+    <tr><td>Fritt eget kapital {{ utd.i_ar.ar|add:"-1"|stringformat:"d" }}-12-31</td><td class="tal">{{ utd.fritt_eget_kapital|kr:0 }}</td></tr>
+    <tr class="summa"><td>Utdelning inom gränsbeloppet</td><td class="tal">{{ utd.max_i_ar|kr:0 }}</td></tr>
+  </table>
+  <p class="liten-text">Utdelning beslutas på årsstämman efter att balansräkningen fastställts. Bolaget måste ha kvar tillräckligt
+    eget kapital och likviditet (försiktighetsregeln). Utdelning över gränsbeloppet beskattas som lön.</p>
+  <h3 class="liten-rubrik">Nästa år ({{ utd.nasta.ar|stringformat:"d" }})</h3>
+  <p class="liten-text">Grundbelopp {{ utd.nasta.grundbelopp|kr:0 }} + lönebaserat {{ utd.nasta.lonebaserat|kr:0 }}
+    (löner {{ utd.nasta.ar|add:"-1"|stringformat:"d" }} cirka {{ utd.nasta.loneunderlag|kr:0 }}) + det du sparar i år.
+    {% if utd.nasta.lonebaserat == 0 %}Lönerna behöver överstiga {{ utd.nasta.loneavdrag|kr:0 }} kr för att ge lönebaserat utrymme.{% endif %}</p>
+</section>
+</div>
+
+<article>
+  <h3 class="liten-rubrik">Dina uppgifter</h3>
+  <form method="post" class="formgrid">{% csrf_token %}
+    <label>Debiterad F-skatt per månad <input name="fskatt_manad" value="{{ foretag.fskatt_manad|default_if_none:'' }}" inputmode="decimal"></label>
+    <label>Ägarandel % <input name="agarandel" value="{{ foretag.agarandel|kr:0 }}" inputmode="decimal"></label>
+    <label>Sparat utdelningsutrymme (senaste K10) <input name="sparat" value="{{ foretag.sparat_utdelningsutrymme|kr:0 }}" inputmode="decimal"></label>
+    <div><button>Spara</button></div>
+  </form>
+  <form method="get" class="knappar liten-text">Taket för lönebaserat utrymme: din egen lön förra året
+    <input name="egen_lon" value="{{ egen_lon|default_if_none:'' }}" inputmode="decimal" style="width:9rem"><button class="outline liten">Räkna</button></form>
+  <p class="liten-text dimmad">Beräkningen är ett stöd för planering och ersätter inte K10-blanketten. Inkomstbasbelopp: 2025 80 600 kr, 2026 83 400 kr.
+    Ränta på omkostnadsbelopp över 100 000 kr ingår inte.</p>
+</article>
+{% endblock %}

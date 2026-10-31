@@ -88,7 +88,7 @@ def frister(fran, till, foretag, med_lon=True):
         res.append({"datum": vardag(dt.date(ar + 1, 2, 12)), "typ": "skatt",
                     "rubrik": f"Fyllnadsinbetalning {ar}",
                     "text": "Betala in eventuell kvarskatt över 30 000 kr för att undvika kostnadsränta.",
-                    "url": "bokslut", "query": f"?ar={ar}#skatt"})
+                    "url": "skatt", "query": ""})
         res.append({"datum": dt.date(ar + 1, 6, 30), "typ": "bolag", "rubrik": f"Årsstämma {ar}",
                     "text": "Årsstämman ska hållas inom sex månader efter räkenskapsårets slut och fastställa "
                             "resultat- och balansräkningen.", "url": "bokslut", "query": f"?ar={ar}"})
