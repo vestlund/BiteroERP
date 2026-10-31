@@ -539,3 +539,32 @@ def bokforing_start(request):
         "ej_exp": Verifikation.objects.filter(sie_exporterad__isnull=True).count(),
         "senaste": Verifikation.objects.prefetch_related("transaktioner")[:10],
         "mallar": bok.MALLAR, "ar": idag.year})
+
+
+# ---------------------------------------------------------------- årsarkiv
+
+def arsarkiv(request):
+    from django.conf import settings
+
+    from . import arsarkiv as arkiv
+
+    ar_lista = sorted(set(Verifikation.objects.values_list("ar", flat=True)), reverse=True) or \
+        [timezone.localdate().year]
+    if request.method == "POST":
+        try:
+            ar = int(request.POST.get("ar", ""))
+        except ValueError:
+            raise Http404
+        if ar not in ar_lista:
+            raise Http404
+        filnamn, data, info = arkiv.skapa(ar)
+        arkiv.spara_kopia(filnamn, data)
+        svar = HttpResponse(data, content_type="application/zip")
+        svar["Content-Disposition"] = f'attachment; filename="{filnamn}"'
+        return svar
+    mapp = settings.BACKUP_DIR / "arsarkiv"
+    sparade = sorted(mapp.glob("arsarkiv_*.zip"), reverse=True)[:20] if mapp.exists() else []
+    return render(request, "bokforing/arsarkiv.html", {
+        "ar_lista": ar_lista, "forvalt": timezone.localdate().year - 1 if timezone.localdate().month < 7
+        else timezone.localdate().year, "sparade": [(f.name, f.stat().st_size) for f in sparade],
+        "mapp": mapp})

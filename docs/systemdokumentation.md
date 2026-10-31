@@ -164,11 +164,15 @@ Från en verifikation finns länkar till faktura, bilaga, bankpost och rättelse
   så en kopia finns utanför datorn. Källkoden finns dessutom i GitHub.
   Prova att återläsa en kopia minst en gång per år.
 - **Arkivering:** räkenskapsinformationen ska bevaras i sju år efter utgången av kalenderåret då räkenskapsåret
-  avslutades. Efter varje bokslut sparas:
-  - SIE 4-export för året,
-  - PDF av huvudbok, verifikationslista och momsrapporter,
-  - CSV-export av behandlingshistoriken,
-  - utskrift av denna systemdokumentation.
+  avslutades. Efter varje bokslut skapas ett årsarkiv (**Bokföring → Årsarkiv**). Det är en zip-fil med:
+  - SIE 4 med balanser och alla verifikationer,
+  - PDF av verifikationslista, huvudbok, resultat- och balansrapport och momsrapporter,
+  - alla bilagor,
+  - behandlingshistoriken med kontroll av hashkedjan,
+  - denna systemdokumentation,
+  - en innehållsförteckning med SHA-256 per fil.
+
+  En kopia sparas automatiskt i `bitero-erp-backups\arsarkiv\`. Arkivet är läsbart utan programmet.
 - **Behörighet:** endast inloggade användare. Lösenord sparas som hash och visas aldrig i historiken.
 
 ## 7. Behandlingshistorik

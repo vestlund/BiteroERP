@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% load humanize %}
+{% block titel %}Årsarkiv{% endblock %}
+{% block innehall %}
+<h1>Årsarkiv</h1>
+<p>Räkenskapsinformationen ska sparas i sju år efter räkenskapsårets utgång, i en form som går att läsa
+  även utan det här programmet. Årsarkivet samlar allt för ett år i en zip-fil:</p>
+<ul>
+  <li><b>SIE 4</b> med kontoplan, ingående och utgående balanser, resultat och alla verifikationer – går att läsa in i alla svenska bokföringsprogram</li>
+  <li><b>PDF:</b> verifikationslista, huvudbok, resultat- och balansrapport och momsrapporter</li>
+  <li><b>Alla bilagor</b> (kvitton, leverantörs- och kundfakturor) som hör till årets verifikationer och fakturor</li>
+  <li><b>Behandlingshistoriken</b> för året och resultatet av kontrollen av hashkedjan</li>
+  <li><b>Systemdokumentationen</b> och ändringsloggen</li>
+  <li><b>LASMIG.txt</b> med innehållsförteckning och kontrollsumma (SHA-256) för varje fil</li>
+</ul>
+<form method="post" class="knappar">{% csrf_token %}
+  <label>Räkenskapsår <select name="ar">{% for a in ar_lista %}<option value="{{ a|stringformat:'d' }}" {% if a == forvalt %}selected{% endif %}>{{ a|stringformat:"d" }}</option>{% endfor %}</select></label>
+  <button>Skapa årsarkiv</button>
+</form>
+<p class="hjalp">Skapa arkivet efter bokslutet, när verifikationerna för året är klara. En kopia sparas automatiskt i
+  <code>{{ mapp }}</code> (OneDrive). Spara gärna ytterligare en kopia på ett annat ställe, t.ex. ett USB-minne.</p>
+{% if sparade %}
+<h2>Sparade arkiv</h2>
+<table><thead><tr><th>Fil</th><th class="tal">Storlek</th></tr></thead>
+  <tbody>{% for namn, storlek in sparade %}<tr><td>{{ namn }}</td><td class="tal">{{ storlek|filesizeformat }}</td></tr>{% endfor %}</tbody></table>
+{% endif %}
+{% endblock %}

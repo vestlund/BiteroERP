@@ -83,6 +83,7 @@ urlpatterns = [
     path("bokforing/rapporter/", b.rapporter, name="rapporter"),
     path("bokforing/huvudbok/", b.huvudbok, name="huvudbok"),
     path("bokforing/sie/", b.sie_sida, name="sie"),
+    path("bokforing/arsarkiv/", b.arsarkiv, name="arsarkiv"),
     # register
     path("register/foretag/", r.foretag, name="foretag"),
     path("register/<str:typ>/", r.lista, name="register_lista"),
