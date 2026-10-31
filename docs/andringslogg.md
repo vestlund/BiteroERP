@@ -3,6 +3,13 @@
 Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
 fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
 
+## 2026.10.31-7
+
+- Bilagor lämnades öppna efter att kontrollsumman räknats, vilket gör att Windows låser filen. Rättat.
+- Testerna fungerar nu på Windows (fyra tester förutsatte Linux eller att git var installerat), och GitHub kör
+  testerna på både Windows och Linux.
+- Läsbara namn för transaktioner, ingående balanser, budget- och lönerader i behandlingshistoriken.
+
 ## 2026.10.31-6
 
 - **Krypterade säkerhetskopior** (AES-256-GCM) av databas, bilagor och årsarkiv. Befintliga okrypterade

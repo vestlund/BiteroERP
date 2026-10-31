@@ -1,6 +1,7 @@
 """Claude-kopplingen (MCP): verktygen för inkorg, sökning och bokföring av kvitton och leverantörsfakturor."""
 
 import asyncio
+import io
 import json
 import tempfile
 from pathlib import Path
@@ -168,11 +169,11 @@ class Installation(TestCase):
             fil = Path(tmp) / "claude_desktop_config.json"
             fil.write_text(json.dumps({"mcpServers": {"annan": {"command": "x"}}, "ovrigt": 1}))
             with override_settings(INKORG_DIR=Path(tmp) / "inkorg"):
-                call_command("installera_claude", fil=str(fil), stdout=open("/dev/null", "w"))
+                call_command("installera_claude", fil=str(fil), stdout=io.StringIO())
             k = json.loads(fil.read_text())
             self.assertEqual(set(k["mcpServers"]), {"annan", "bitero-erp"})
             self.assertEqual(k["mcpServers"]["bitero-erp"]["args"][-1], "mcp")
             self.assertEqual(k["ovrigt"], 1)
             self.assertTrue((Path(tmp) / "claude_desktop_config.json.bak").exists())
-            call_command("installera_claude", fil=str(fil), ta_bort=True, stdout=open("/dev/null", "w"))
+            call_command("installera_claude", fil=str(fil), ta_bort=True, stdout=io.StringIO())
             self.assertEqual(set(json.loads(fil.read_text())["mcpServers"]), {"annan"})

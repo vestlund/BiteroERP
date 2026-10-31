@@ -2,9 +2,11 @@
 
 import io
 import os
+import shutil
 import sqlite3
 import subprocess
 import tempfile
+import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
 from unittest import mock
@@ -189,6 +191,7 @@ class Startkontroller(TillfalligLagring):
         self.assertIn("Säkerhetskopian misslyckades", sida)
         self.assertIn("OneDrive-mappen saknas", sida)
 
+    @unittest.skipUnless(shutil.which("git"), "git är inte installerat")
     def test_lokala_andringar(self):
         repo = self.rot / "repo"
         repo.mkdir()

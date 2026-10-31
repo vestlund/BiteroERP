@@ -22,6 +22,8 @@ class Backupmapp(SimpleTestCase):
             self.assertEqual(hitta_backupmapp(Path("/kod")), Path("/annan/plats"))
 
     def test_utan_onedrive_i_programmappen(self):
-        rensat = {k: v for k, v in os.environ.items() if k not in ("OneDrive", "OneDriveCommercial", "BITERO_BACKUP_DIR")}
+        # Windows skriver miljövariablernas namn med versaler (ONEDRIVE), så jämför utan skiftläge
+        bort = {"ONEDRIVE", "ONEDRIVECOMMERCIAL", "BITERO_BACKUP_DIR"}
+        rensat = {k: v for k, v in os.environ.items() if k.upper() not in bort}
         with mock.patch.dict(os.environ, rensat, clear=True):
             self.assertEqual(hitta_backupmapp(Path("/kod")), Path("/kod/backups"))

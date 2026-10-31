@@ -176,8 +176,14 @@ class Bilaga(models.Model):
     def save(self, *args, **kwargs):
         if not self.sha256 and self.fil:
             h = hashlib.sha256()
-            for chunk in self.fil.chunks():
-                h.update(chunk)
+            if getattr(self.fil, "_committed", True):
+                # Redan sparad fil: öppna och stäng själv. Annars lämnas filen öppen, och Windows låser den.
+                with self.fil.storage.open(self.fil.name, "rb") as f:
+                    for chunk in iter(lambda: f.read(1 << 16), b""):
+                        h.update(chunk)
+            else:
+                for chunk in self.fil.chunks():
+                    h.update(chunk)
             self.sha256 = h.hexdigest()
         if not self.namn and self.fil:
             self.namn = Path(self.fil.name).name
