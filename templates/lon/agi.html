@@ -28,7 +28,10 @@
     <tr class="summa"><td>Summa avdragen skatt</td><td class="tal">{{ d.summa_skatt|kr:0 }}</td></tr>
     <tr class="summa"><td>Att betala till skattekontot</td><td class="tal">{{ d.summa_avgift|add:d.summa_skatt|kr:0 }}</td></tr>
   </table>
-  <p class="liten-text">Lämnas i Skatteverkets e-tjänst <i>Arbetsgivardeklaration</i>. Deklarera och betala senast <b>{{ deadline }}</b>
+  <p><a href="{% url 'agi_fil' %}?period={{ period }}" role="button">Ladda ner fil till Skatteverket</a></p>
+  <p class="liten-text">Logga in på Skatteverket → <b>Arbetsgivardeklaration</b> → <b>Lämna via fil</b> och ladda upp filen.
+    Första gången: prova filen i Skatteverkets tjänst <i>Testa arbetsgivardeklaration</i>. I filen anges hela kronor.</p>
+  <p class="liten-text">Deklarera och betala senast <b>{{ deadline }}</b>
     (gäller företag med beskattningsunderlag upp till 40 miljoner kr; kontrollera dagen hos Skatteverket).
     När beloppet dragits från skattekontot: bokför mallen <a href="{% url 'verifikation_ny' %}?mall=lonskatt">Arbetsgivaravgifter + personalskatt dras</a>.</p>
 </article>

@@ -4,7 +4,9 @@ from decimal import Decimal
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Max
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -204,3 +206,20 @@ def skattetabeller(request):
     from .models import Skattetabellrad
     finns = Skattetabellrad.objects.values("ar").annotate(n=Count("id"), t=Count("tabell", distinct=True)).order_by("-ar")
     return render(request, "lon/skattetabeller.html", {"form": form, "finns": finns})
+
+
+def agi_fil(request):
+    """Arbetsgivardeklarationen som XML-fil att ladda upp hos Skatteverket."""
+    from register.models import Foretag
+
+    from . import agifil
+
+    period = request.GET.get("period", "")
+    try:
+        filnamn, data, _ = agifil.agi_xml(period, Foretag.hamta())
+    except (agifil.AgiFel, ValueError) as e:
+        messages.error(request, str(e) or "Ogiltig period.")
+        return redirect(f"{reverse('agi')}?period={period}")
+    svar = HttpResponse(data, content_type="application/xml; charset=utf-8")
+    svar["Content-Disposition"] = f'attachment; filename="{filnamn}"'
+    return svar

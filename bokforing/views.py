@@ -352,6 +352,8 @@ def _manadsslut(ar, m):
 
 
 def moms(request):
+    from . import skatteverket
+
     foretag = Foretag.hamta()
     idag = timezone.localdate()
     ar = int(request.GET.get("ar", idag.year))
@@ -375,7 +377,8 @@ def moms(request):
         "rutor": rutor, "ruta49": rapport["rutor"]["49"], "fran": fran, "till": till, "namn": namn,
         "perioder": [(i, p[2]) for i, p in enumerate(perioder)], "vald": vald, "ar": ar, "typ": typ,
         "avrakning": avrakning, "ar_lista": range(idag.year - 3, idag.year + 2),
-        "momskonton": bok.momskonto_saldon(fran, till), "deadline": _momsdeadline(till, typ)})
+        "momskonton": bok.momskonto_saldon(fran, till), "deadline": _momsdeadline(till, typ),
+        "ruta49_fil": skatteverket.momsrutor(fran, till)["49"]})
 
 
 def _momsdeadline(till, typ):
@@ -568,3 +571,21 @@ def arsarkiv(request):
         "ar_lista": ar_lista, "forvalt": timezone.localdate().year - 1 if timezone.localdate().month < 7
         else timezone.localdate().year, "sparade": [(f.name, f.stat().st_size) for f in sparade],
         "mapp": mapp})
+
+
+def moms_fil(request):
+    """Momsdeklarationen som eSKD-fil att ladda upp hos Skatteverket."""
+    from . import skatteverket
+
+    form = MomsperiodForm(request.GET)
+    if not form.is_valid():
+        messages.error(request, _felen(form))
+        return redirect("moms")
+    try:
+        filnamn, data = skatteverket.momsfil(form.cleaned_data["fran"], form.cleaned_data["till"], Foretag.hamta())
+    except skatteverket.DeklarationsFel as e:
+        messages.error(request, str(e))
+        return nasta_eller(request, "moms")
+    svar = HttpResponse(data, content_type="application/xml; charset=iso-8859-1")
+    svar["Content-Disposition"] = f'attachment; filename="{filnamn}"'
+    return svar

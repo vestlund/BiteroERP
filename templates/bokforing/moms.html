@@ -23,9 +23,15 @@
   {% endif %}{% endfor %}
   <tr class="summa"><td class="rutnr">49</td><td>{% if ruta49 >= 0 %}Moms att betala{% else %}Moms att få tillbaka{% endif %}</td><td class="tal">{{ ruta49|kr:0 }}</td></tr>
 </table>
-<p class="hjalp">Rutorna fylls i på momsdeklarationen i Skatteverkets e-tjänst. Belopp i hela kronor. Kontrollera alltid mot Visma, som är huvudbok.</p>
+<p class="hjalp">Kontrollera alltid mot Visma, som är huvudbok.</p>
 </section>
 <section>
+<article>
+  <h3 class="liten-rubrik">Deklarera</h3>
+  <p><a href="{% url 'moms_fil' %}?fran={{ fran|date:'Y-m-d' }}&till={{ till|date:'Y-m-d' }}&nasta={{ request.get_full_path|urlencode }}" role="button">Ladda ner fil till Skatteverket</a></p>
+  <p class="liten-text">Logga in på Skatteverket → <b>Lämna momsdeklaration</b> → <b>Deklarera via fil</b> och ladda upp filen.
+    I filen anges hela kronor (ören stryks); ruta 49 blir då <b>{{ ruta49_fil|kr:0 }}</b>.</p>
+</article>
 <article>
   <h3 class="liten-rubrik">Avräkning</h3>
   {% if avrakning %}

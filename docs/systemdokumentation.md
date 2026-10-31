@@ -127,6 +127,13 @@ för utbetalningar 1 april 2026 – 30 september 2027. Skatteavdrag enligt Skatt
 per år) eller procentsats enligt beslut. Underlaget till arbetsgivardeklarationen (ruta 011, 012, 013, 001)
 summeras per utbetalningsmånad.
 
+### Deklarationer till Skatteverket
+- **Moms:** filen följer Skatteverkets format eSKDUpload 6.0 och laddas upp i e-tjänsten Lämna momsdeklaration.
+  Beloppen anges i hela kronor; ören stryks. Ruta 49 räknas på de avrundade beloppen.
+- **Arbetsgivardeklaration:** XML-fil enligt Skatteverkets schema version 1.1, med en huvuduppgift och en
+  individuppgift per anställd. Den innehåller ruta 011, 012, 013 och 001, och specifikationsnumret är den
+  anställdas nummer. Beloppen anges i hela kronor.
+
 ### Bankavstämning (serie B och kopplingar)
 En importerad bankpost matchas automatiskt i denna ordning. Första säkra träffen gäller.
 1. Utbetalning med end-to-end-id `LF<id>` från betalfilen → leverantörsfakturan bokförs som betald (serie U).
