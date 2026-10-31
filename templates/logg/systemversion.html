@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block titel %}Systemversion {{ sv.version }}{% endblock %}
+{% block innehall %}
+<p><a href="{% url 'logg' %}">← Behandlingshistorik</a></p>
+<h1>Systemversion {{ sv.version }}</h1>
+<p>Togs i bruk {{ sv.tid|date:"Y-m-d H:i" }}. Fingeravtryck <code class="liten-text">{{ sv.fingeravtryck }}</code>.
+  {% if sv.git %}Git-version <code>{{ sv.git }}</code>.{% endif %}
+  Vad som ändrades beskrivs i <a href="{% url 'systemdokumentation' %}#andringslogg">ändringsloggen</a>.</p>
+{% if sv.tillagda %}<h2>Nya filer</h2><ul class="liten-text">{% for f in sv.tillagda %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
+{% if sv.andrade %}<h2>Ändrade filer</h2><ul class="liten-text">{% for f in sv.andrade %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
+{% if sv.borttagna %}<h2>Borttagna filer</h2><ul class="liten-text">{% for f in sv.borttagna %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
+{% if not sv.tillagda and not sv.andrade and not sv.borttagna %}<p>Första registrerade versionen ({{ sv.filer|length }} programfiler).</p>{% endif %}
+{% endblock %}

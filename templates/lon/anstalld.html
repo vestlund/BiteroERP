@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad"><h1>{{ a.namn }} {% if not a.aktiv %}<span class="status">avslutad</span>{% endif %}</h1>
+  <a href="{% url 'anstalld_andra' a.pk %}" role="button" class="outline">Ändra</a></div>
+<div class="kpi">
+  <article><div class="etikett">Bruttolön {{ ar|stringformat:"d" }}</div><div class="varde">{{ ack.brutto|kr:0 }}</div></article>
+  <article><div class="etikett">Förmåner {{ ar|stringformat:"d" }}</div><div class="varde">{{ ack.formaner|kr:0 }}</div></article>
+  <article><div class="etikett">Skatteavdrag {{ ar|stringformat:"d" }}</div><div class="varde">{{ ack.skatt|kr:0 }}</div></article>
+  <article><div class="etikett">Arbetsgivaravgifter {{ ar|stringformat:"d" }}</div><div class="varde">{{ ack.avgift|kr:0 }}</div></article>
+</div>
+<article><div class="formgrid">
+  <div><small class="dimmad">Personnummer</small><br>{{ a.personnummer }}</div>
+  <div><small class="dimmad">Befattning</small><br>{{ a.befattning|default:"–" }}</div>
+  <div><small class="dimmad">Lön</small><br>{% if a.lonetyp == 'manad' %}{{ a.manadslon|kr }} kr/mån{% else %}{{ a.timlon|kr }} kr/tim{% endif %}</div>
+  <div><small class="dimmad">Skatt</small><br>{{ a.skattetext }}</div>
+  <div><small class="dimmad">Konto för utbetalning</small><br>{{ a.clearingnummer }} {{ a.bankkonto|default:"–" }}</div>
+  <div><small class="dimmad">Semesterdagar</small><br>{{ a.semesterdagar }} per år</div>
+</div></article>
+<h2>Lönespecifikationer</h2>
+<table>
+  <thead><tr><th>Period</th><th>Utbetalning</th><th class="tal">Brutto</th><th class="tal">Skatt</th><th class="tal">Netto</th><th>Status</th></tr></thead>
+  <tbody>{% for s, b in specar %}
+    <tr><td><a href="{{ s.get_absolute_url }}">{{ s.korning.period }}</a></td><td>{{ s.korning.utbetalningsdatum }}</td>
+      <td class="tal">{{ b.brutto|kr }}</td><td class="tal">{{ b.skatt|kr }}</td><td class="tal">{{ b.netto|kr }}</td>
+      <td><span class="status {% if s.korning.last %}betald{% else %}utkast{% endif %}">{{ s.korning.get_status_display }}</span></td></tr>
+  {% empty %}<tr><td colspan="6">Inga lönespecifikationer ännu.</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

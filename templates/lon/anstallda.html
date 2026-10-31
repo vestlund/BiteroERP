@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad"><h1>Anställda</h1><a href="{% url 'anstalld_ny' %}" role="button">+ Ny anställd</a></div>
+<p class="liten-text">{% if alla %}<a href="?">Visa bara aktiva</a>{% else %}<a href="?visa=alla">Visa även avslutade</a>{% endif %}</p>
+<table class="klickbar">
+  <thead><tr><th>Nr</th><th>Namn</th><th>Befattning</th><th>Lön</th><th>Skatt</th><th>Anställd från</th></tr></thead>
+  <tbody>{% for a in anstallda %}
+    <tr onclick="location.href='{{ a.get_absolute_url }}'" class="{% if not a.aktiv %}dimmad{% endif %}">
+      <td>{{ a.nummer }}</td><td><a href="{{ a.get_absolute_url }}">{{ a.namn }}</a></td><td>{{ a.befattning }}</td>
+      <td>{% if a.lonetyp == 'manad' %}{{ a.manadslon|kr:0 }} kr/mån{% else %}{{ a.timlon|kr }} kr/tim{% endif %}</td>
+      <td>{{ a.skattetext }}</td><td>{{ a.anstalld_fran|default:"" }}</td></tr>
+  {% empty %}<tr><td colspan="6">Inga anställda ännu. Lägg upp dig själv om du tar ut lön från bolaget.</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

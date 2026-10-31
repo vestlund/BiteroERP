@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad"><h1>Lönekörningar</h1>
+  <div class="knappar"><a href="{% url 'agi' %}" role="button" class="outline">Arbetsgivardeklaration</a>
+  <a href="{% url 'lonekorning_ny' %}" role="button">+ Ny lönekörning</a></div></div>
+{% if not har_anstallda %}<article>Lägg först upp <a href="{% url 'anstalld_ny' %}">en anställd</a>.</article>{% endif %}
+<table class="klickbar">
+  <thead><tr><th>Period</th><th>Utbetalning</th><th class="tal">Anställda</th><th class="tal">Brutto</th><th class="tal">Skatt</th><th class="tal">Netto</th><th class="tal">Arbetsgivaravg.</th><th>Status</th></tr></thead>
+  <tbody>{% for k, s in korningar %}
+    <tr onclick="location.href='{{ k.get_absolute_url }}'"><td><a href="{{ k.get_absolute_url }}">{{ k.period }}</a></td><td>{{ k.utbetalningsdatum }}</td>
+      <td class="tal">{{ k.specar.all|length }}</td><td class="tal">{{ s.brutto|kr }}</td><td class="tal">{{ s.skatt|kr }}</td>
+      <td class="tal">{{ s.netto|kr }}</td><td class="tal">{{ s.avgift|kr }}</td>
+      <td><span class="status {% if k.last %}betald{% else %}utkast{% endif %}">{{ k.get_status_display }}</span></td></tr>
+  {% empty %}<tr><td colspan="8">Inga lönekörningar ännu.</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

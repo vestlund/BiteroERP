@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>Verifikation {{ v.vernr }} <small class="dimmad">{{ v.get_serie_display }}</small>
+    {% if v.ar_rattad %}<span class="status makulerad">rättad</span>{% endif %}</h1>
+  <div class="knappar">
+    <a href="{% url 'verifikation_ny' %}?kopiera={{ v.pk }}" role="button" class="outline secondary">Kopiera till ny</a>
+    {% if not v.ar_rattad and not v.rattar_id %}
+    <form method="post" action="{% url 'verifikation_ratta' v.pk %}">{% csrf_token %}
+      <button class="secondary" onclick="return confirm('Skapa en rättelseverifikation som vänder alla belopp i {{ v.vernr }}?')">Rätta (vänd)</button></form>
+    {% endif %}
+  </div>
+</div>
+<article>
+  <div class="formgrid">
+    <div><small class="dimmad">Datum</small><br>{{ v.datum }}</div>
+    <div class="bred2"><small class="dimmad">Text</small><br>{{ v.text }}</div>
+    <div><small class="dimmad">Registrerad</small><br>{{ v.skapad|date:"Y-m-d H:i" }} {{ v.skapad_av }}</div>
+    <div><small class="dimmad">Exporterad till Visma</small><br>{{ v.sie_exporterad|date:"Y-m-d H:i"|default:"Nej" }}</div>
+    {% if v.kundfaktura %}<div><small class="dimmad">Kundfaktura</small><br><a href="{{ v.kundfaktura.get_absolute_url }}">{{ v.kundfaktura }}</a></div>{% endif %}
+    {% if v.levfaktura %}<div><small class="dimmad">Leverantörsfaktura</small><br><a href="{{ v.levfaktura.get_absolute_url }}">{{ v.levfaktura.motpartsnamn }}</a></div>{% endif %}
+    {% if v.rattar %}<div><small class="dimmad">Rättar</small><br><a href="{{ v.rattar.get_absolute_url }}">{{ v.rattar.vernr }}</a></div>{% endif %}
+    {% for r in rattelser %}<div><small class="dimmad">Rättad av</small><br><a href="{{ r.get_absolute_url }}">{{ r.vernr }}</a></div>{% endfor %}
+    {% for b in bankposter %}<div><small class="dimmad">Bankpost</small><br>{{ b.datum }} {{ b.text|truncatechars:30 }}</div>{% endfor %}
+  </div>
+</article>
+<table>
+  <thead><tr><th>Konto</th><th>Text</th><th class="tal">Debet</th><th class="tal">Kredit</th></tr></thead>
+  <tbody>{% for t in transaktioner %}
+    <tr><td><a href="{% url 'huvudbok' %}?konto={{ t.konto_id }}&fran={{ v.datum|date:'Y' }}-01-01&till={{ v.datum|date:'Y' }}-12-31">{{ t.konto_id }}</a> {{ t.konto.namn }}</td><td>{{ t.text }}</td>
+      <td class="tal">{{ t.debet|kr }}</td><td class="tal">{{ t.kredit|kr }}</td></tr>
+  {% endfor %}
+  <tr class="summa"><td></td><td>Summa</td><td class="tal">{{ debet|kr }}</td><td class="tal">{{ kredit|kr }}</td></tr></tbody>
+</table>
+<h2>Bilagor</h2>
+<article>
+  {% include "bokforing/_bilagor.html" with bilagor=v.bilagor.all %}
+  <form method="post" enctype="multipart/form-data" class="knappar">{% csrf_token %}
+    <input type="file" name="bilaga" accept=".pdf,image/*" required><button class="outline">Lägg till bilaga</button></form>
+</article>
+<p class="hjalp">Bokförda verifikationer kan inte ändras eller raderas. Är något fel: klicka "Rätta (vänd)" och bokför sedan rätt version, till exempel via "Kopiera till ny".</p>
+{% endblock %}

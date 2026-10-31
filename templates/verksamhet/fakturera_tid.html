@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<h1>Fakturera tid</h1>
+<article>
+<form method="post">{% csrf_token %}
+  <div class="formgrid">
+    <label>{{ form.kund.label }}{{ form.kund }}{{ form.kund.errors }}</label>
+    <label>{{ form.till_och_med.label }}{{ form.till_och_med }}{{ form.till_och_med.errors }}</label>
+    <label>{{ form.fakturadatum.label }}{{ form.fakturadatum }}{{ form.fakturadatum.errors }}</label>
+    <label class="bred">{{ form.en_rad_per_post }} {{ form.en_rad_per_post.label }}</label>
+  </div>
+  <div class="knappar">
+    <button type="submit" class="outline">Visa ofakturerad tid</button>
+    {% if f.poster %}<button type="submit" name="skapa" value="1">Skapa fakturautkast ({{ f.netto|kr }} kr exkl. moms)</button>{% endif %}
+  </div>
+</form>
+</article>
+{% if f %}
+  {% if f.poster %}
+  <h2>Underlag</h2>
+  <table>
+    <thead><tr><th>Uppdrag</th><th class="tal">Timmar</th><th class="tal">Pris</th><th class="tal">Belopp</th></tr></thead>
+    <tbody>{% for u, s in f.per_uppdrag.items %}
+      <tr><td>{{ u.namn }}</td><td class="tal">{{ s.timmar|h }}</td><td class="tal">{{ u.pris|kr }}</td><td class="tal">{{ s.belopp|kr }}</td></tr>
+    {% endfor %}
+    <tr class="summa"><td>Summa exkl. moms</td><td></td><td></td><td class="tal">{{ f.netto|kr }}</td></tr></tbody>
+  </table>
+  <details><summary>Tidposter ({{ f.poster|length }})</summary>
+  <table class="liten-text"><tbody>{% for p in f.poster %}
+    <tr><td>{{ p.datum }}</td><td>{{ p.uppdrag.namn }}</td><td class="tal">{{ p.timmar|h }}</td><td>{{ p.beskrivning }}</td></tr>
+  {% endfor %}</tbody></table></details>
+  {% else %}
+  <article>Ingen ofakturerad, fakturerbar tid för kunden till och med valt datum.</article>
+  {% endif %}
+{% endif %}
+{% endblock %}

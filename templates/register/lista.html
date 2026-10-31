@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>{{ cfg.titel }}</h1>
+  <a href="{% url 'register_ny' typ %}" role="button">+ Ny {{ cfg.singular }}</a>
+</div>
+<form method="get" class="filter">
+  <input type="search" name="q" value="{{ q }}" placeholder="Sök …" autofocus>
+  {% if not cfg.utan_aktiv %}<select name="visa" onchange="this.form.submit()">
+    <option value="aktiva" {% if visa == 'aktiva' %}selected{% endif %}>Bara aktiva</option>
+    <option value="alla" {% if visa == 'alla' %}selected{% endif %}>Alla</option></select>{% endif %}
+  <button class="outline">Sök</button>
+</form>
+{% if cfg.hjalp %}<p class="hjalp">{{ cfg.hjalp }}</p>{% endif %}
+<table class="klickbar">
+  <thead><tr>{% for f, rubrik in cfg.kolumner %}<th>{{ rubrik }}</th>{% endfor %}<th></th></tr></thead>
+  <tbody>{% for r in rader %}
+    <tr onclick="location.href='{{ r.url }}'" class="{% if r.obj.aktiv == False %}dimmad{% endif %}">
+      {% for c in r.celler %}<td>{% if forloop.counter == 2 %}<a href="{{ r.url }}">{{ c }}</a>{% else %}{{ c }}{% endif %}</td>{% endfor %}
+      <td class="tal"><a href="{% url 'register_andra' typ r.obj.pk %}" onclick="event.stopPropagation()">Ändra</a></td></tr>
+  {% empty %}<tr><td colspan="9">Inga träffar.</td></tr>{% endfor %}</tbody>
+</table>
+{% include "sidor.html" %}
+{% endblock %}

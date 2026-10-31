@@ -1,0 +1,154 @@
+"""Formulären: att indata valideras, svenska tal accepteras och omdirigeringar stannar i systemet."""
+
+from django.test import TestCase
+from django.urls import reverse
+
+from bokforing.models import Bankpost, Leverantorsfaktura, Matchningsregel, Verifikation
+from budget.models import Budget, Budgetrad
+from verksamhet.models import Tidpost, Uppdrag
+
+from .grund import anvandare, d, datum, grunddata
+
+
+class Grund(TestCase):
+    def setUp(self):
+        self.kund, self.lev = grunddata()
+        self.client.force_login(anvandare())
+
+    def meddelanden(self, svar):
+        return [str(m) for m in svar.wsgi_request._messages]
+
+
+class Bankposter(Grund):
+    def setUp(self):
+        super().setUp()
+        self.post = Bankpost.objects.create(datum=datum("2026-04-02"), text="AVGIFT", belopp=d("-25"),
+                                            konto_id=1930, nyckel="a")
+        self.url = reverse("bankpost_hantera", args=[self.post.pk])
+
+    def test_bokfor_mot_konto_och_spara_regel(self):
+        self.client.post(self.url, {"atgard": "konto", "motkonto": "6570", "text": "Bankavgift",
+                                    "spara_regel": "1", "regeltext": "AVGIFT"})
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.verifikation.text, "Bankavgift")
+        self.assertEqual(Matchningsregel.objects.get().motkonto_id, 6570)
+
+    def test_okant_konto_ger_fel_och_ingen_bokforing(self):
+        r = self.client.post(self.url, {"atgard": "konto", "motkonto": "9999"})
+        self.assertIn("finns inte", " ".join(self.meddelanden(r)))
+        self.assertFalse(Verifikation.objects.exists())
+
+    def test_okand_atgard_och_saknat_id(self):
+        self.client.post(self.url, {"atgard": "radera_allt"})
+        self.client.post(self.url, {"atgard": "ver"})
+        self.post.refresh_from_db()
+        self.assertFalse(self.post.hanterad)
+
+    def test_nasta_far_inte_leda_ut_ur_systemet(self):
+        r = self.client.post(self.url, {"atgard": "ignorera", "nasta": "https://elak.example/"})
+        self.assertEqual(r.url, reverse("bank"))
+        r = self.client.post(self.url, {"atgard": "aterstall", "nasta": "//elak.example/"})
+        self.assertEqual(r.url, reverse("bank"))
+        r = self.client.post(self.url, {"atgard": "ignorera", "nasta": "/bank/?visa=alla"})
+        self.assertEqual(r.url, "/bank/?visa=alla")
+
+
+class Momsavrakning(Grund):
+    def test_ogiltigt_datum(self):
+        r = self.client.post(reverse("moms_avrakna"), {"fran": "igår", "till": "2026-03-31"})
+        self.assertEqual(r.status_code, 302)
+        self.assertFalse(Verifikation.objects.exists())
+
+    def test_omvand_period(self):
+        r = self.client.post(reverse("moms_avrakna"), {"fran": "2026-03-31", "till": "2026-01-01"})
+        self.assertIn("efter", " ".join(self.meddelanden(r)))
+
+
+class Budgetar(Grund):
+    def test_ny_budget_med_forslag_och_svenska_tal(self):
+        r = self.client.post(reverse("budget_ny"), {"ar": "2027", "namn": "", "huvudbudget": "on",
+                                                    "kalla": "forslag", "belaggning": "85,5", "timmar": "7,5"})
+        b = Budget.objects.get()
+        self.assertEqual((b.namn, b.ar, b.huvudbudget), ("Budget 2027", 2027, True))
+        self.assertRedirects(r, reverse("budget_redigera", args=[b.pk]), fetch_redirect_response=False)
+
+    def test_kopiera_budget_som_inte_finns(self):
+        self.client.post(reverse("budget_ny"), {"ar": "2027", "kalla": "999"})
+        self.assertFalse(Budget.objects.exists())
+
+    def test_redigera_rader(self):
+        u = Uppdrag.objects.create(kund=self.kund, namn="Rådgivning", timpris=d("1000"))
+        b = Budget.objects.create(ar=2027, namn="B")
+        data = {"namn": "Budget 2027", "huvudbudget": "on",
+                "r-ny1-typ": "tid", "r-ny1-ordning": "1", "r-ny1-uppdrag": str(u.pk), "r-ny1-timpris": "1 250,50",
+                "r-ny2-typ": "kostnad", "r-ny2-ordning": "2", "r-ny2-konto": "6570", "r-ny2-m1": "1 000"}
+        data.update({f"r-ny1-m{m}": "160" for m in range(1, 13)})
+        self.client.post(reverse("budget_redigera", args=[b.pk]), data)
+        tid = Budgetrad.objects.get(typ="tid")
+        self.assertEqual((tid.timpris, tid.beskrivning, tid.kund), (d("1250.50"), str(u), self.kund))
+        self.assertEqual(tid.varden, [d("160")] * 12)
+        kostnad = Budgetrad.objects.get(typ="kostnad")
+        self.assertEqual((kostnad.beskrivning, kostnad.varden[0]), ("Bankkostnader", d("1000")))
+
+    def test_befintlig_rad_uppdateras_och_raderas(self):
+        b = Budget.objects.create(ar=2027, namn="B")
+        rad = Budgetrad.objects.create(budget=b, typ="kostnad", beskrivning="Hyra", konto_id=6570)
+        sida = self.client.get(reverse("budget_redigera", args=[b.pk])).content.decode()
+        self.assertIn(f'name="r-{rad.pk}-m1"', sida)
+        self.client.post(reverse("budget_redigera", args=[b.pk]), {
+            "namn": "B", f"r-{rad.pk}-typ": "kostnad", f"r-{rad.pk}-beskrivning": "Hyra",
+            f"r-{rad.pk}-konto": "6570", f"r-{rad.pk}-m1": "3 000"})
+        self.assertEqual(Budgetrad.objects.get().varden[0], d("3000"))
+        self.client.post(reverse("budget_redigera", args=[b.pk]), {
+            "namn": "B", f"r-{rad.pk}-typ": "kostnad", f"r-{rad.pk}-radera": "1"})
+        self.assertFalse(Budgetrad.objects.exists())
+
+    def test_ogiltigt_tal_sparar_ingenting(self):
+        b = Budget.objects.create(ar=2027, namn="B")
+        r = self.client.post(reverse("budget_redigera", args=[b.pk]), {
+            "namn": "Nytt namn", "r-ny1-typ": "kostnad", "r-ny1-konto": "6570", "r-ny1-m3": "tusen"})
+        self.assertIn("sparades inte", " ".join(self.meddelanden(r)))
+        b.refresh_from_db()
+        self.assertEqual(b.namn, "B")
+        self.assertFalse(Budgetrad.objects.exists())
+
+
+class Tidrutan(Grund):
+    def setUp(self):
+        super().setUp()
+        self.u = Uppdrag.objects.create(kund=self.kund, namn="Rådgivning", timpris=d("1000"))
+
+    def cell(self, timmar, dag="2026-03-02"):
+        return self.client.post(reverse("tid_cell"), {"uppdrag": self.u.pk, "datum": dag, "timmar": timmar})
+
+    def test_satt_andra_och_ta_bort(self):
+        self.assertEqual(self.cell("7,5").status_code, 204)
+        self.assertEqual(Tidpost.objects.get().timmar, d("7.5"))
+        self.cell("8")
+        self.assertEqual(Tidpost.objects.get().timmar, d("8"))
+        self.cell("")
+        self.assertFalse(Tidpost.objects.exists())
+
+    def test_ogiltiga_varden(self):
+        for timmar, dag in [("25", "2026-03-02"), ("-1", "2026-03-02"), ("åtta", "2026-03-02"), ("8", "x")]:
+            with self.subTest(timmar=timmar, dag=dag):
+                self.assertEqual(self.cell(timmar, dag).status_code, 400)
+        self.assertFalse(Tidpost.objects.exists())
+
+
+class Betalfil(Grund):
+    def test_skapar_fil_for_valda_fakturor(self):
+        lf = Leverantorsfaktura.objects.create(leverantor=self.lev, belopp=d("1250"), konto_id=5410)
+        r = self.client.post(reverse("io_post", args=["betalfil"]), {"faktura": [lf.pk], "datum": "2026-04-30"})
+        self.assertEqual(r["Content-Type"], "application/xml")
+        self.assertIn(b"<ReqdExctnDt>2026-04-30", r.content)
+
+    def test_ingen_faktura_vald(self):
+        r = self.client.post(reverse("io_post", args=["betalfil"]), {"datum": "2026-04-30"})
+        self.assertIn("minst en faktura", " ".join(self.meddelanden(r)))
+
+    def test_betald_faktura_kan_inte_valjas(self):
+        lf = Leverantorsfaktura.objects.create(leverantor=self.lev, belopp=d("1"), konto_id=5410,
+                                               betaldatum=datum("2026-01-01"))
+        r = self.client.post(reverse("io_post", args=["betalfil"]), {"faktura": [lf.pk], "datum": "2026-04-30"})
+        self.assertEqual(r.status_code, 302)

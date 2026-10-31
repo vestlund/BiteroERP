@@ -1,0 +1,97 @@
+{% load kr %}<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Faktura {{ f.nummer|default:"UTKAST" }} – {{ foretag.namn }}</title>
+<style>
+  @page { size: A4; margin: 16mm 16mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 10pt; color: #111; margin: 0; }
+  .sida { max-width: 178mm; margin: 0 auto; min-height: 262mm; display: flex; flex-direction: column; }
+  .topp { display: flex; justify-content: space-between; align-items: flex-start; }
+  .avsandare { font-size: 15pt; font-weight: 700; }
+  .titel { text-align: right; }
+  .titel h1 { font-size: 20pt; margin: 0 0 2mm; letter-spacing: .05em; }
+  .utkast { color: #b42318; }
+  .info { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; margin-top: 14mm; }
+  .mottagare { font-size: 11pt; line-height: 1.4; padding-top: 4mm; }
+  table.fakta td { padding: .6mm 0; } table.fakta td:first-child { color: #555; padding-right: 5mm; }
+  table.rader { width: 100%; border-collapse: collapse; margin-top: 12mm; }
+  table.rader th { text-align: left; border-bottom: 1.5px solid #111; padding: 2mm 1mm; font-size: 9pt; }
+  table.rader td { padding: 2mm 1mm; border-bottom: .5px solid #ddd; vertical-align: top; }
+  .tal { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .summering { margin-left: auto; width: 85mm; margin-top: 6mm; border-collapse: collapse; }
+  .summering td { padding: 1mm; }
+  .summering .total td { font-size: 13pt; font-weight: 700; border-top: 1.5px solid #111; padding-top: 2mm; }
+  .meddelande { margin-top: 8mm; white-space: pre-line; }
+  .fot { margin-top: auto; border-top: .5px solid #999; padding-top: 3mm; font-size: 8pt; color: #333;
+         display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm; }
+  .fot b { display: block; color: #111; }
+  .verktyg { position: fixed; top: 10px; right: 10px; }
+  .verktyg button { font-size: 12pt; padding: 8px 14px; cursor: pointer; }
+  @media print { .verktyg { display: none; } }
+</style>
+</head>
+<body>
+<div class="verktyg"><button onclick="window.print()">Skriv ut / spara som PDF</button></div>
+<div class="sida">
+  <div class="topp">
+    <div class="avsandare">{{ foretag.namn }}</div>
+    <div class="titel">
+      <h1>FAKTURA</h1>
+      {% if f.nummer %}Nr {{ f.nummer }}{% else %}<span class="utkast">UTKAST – ej giltig faktura</span>{% endif %}
+    </div>
+  </div>
+
+  <div class="info">
+    <table class="fakta">
+      <tr><td>Fakturadatum</td><td>{{ f.fakturadatum|date:"Y-m-d" }}</td></tr>
+      <tr><td>Förfallodatum</td><td><b>{{ f.forfallodatum|date:"Y-m-d"|default:"–" }}</b></td></tr>
+      <tr><td>Betalningsvillkor</td><td>{{ f.kund.betalningsvillkor|default:"30 dagar netto" }}</td></tr>
+      <tr><td>Kundnummer</td><td>{{ f.kund.nummer }}</td></tr>
+      {% if f.er_referens %}<tr><td>Er referens</td><td>{{ f.er_referens }}</td></tr>{% endif %}
+      {% if f.var_referens %}<tr><td>Vår referens</td><td>{{ f.var_referens }}</td></tr>{% endif %}
+      {% if f.ordernummer %}<tr><td>Ordernummer</td><td>{{ f.ordernummer }}</td></tr>{% endif %}
+      {% if f.period %}<tr><td>Period</td><td>{{ f.period }}</td></tr>{% endif %}
+      <tr><td>Dröjsmålsränta</td><td>{{ foretag.drojsmalsranta }}</td></tr>
+    </table>
+    <div class="mottagare">
+      <b>{{ f.kund.namn }}</b><br>
+      {% if f.kund.adress1 %}{{ f.kund.adress1 }}<br>{% endif %}
+      {% if f.kund.adress2 %}{{ f.kund.adress2 }}<br>{% endif %}
+      {{ f.kund.postnummer }} {{ f.kund.ort }}<br>
+      {% if f.kund.landkod != "SE" %}{{ f.kund.landkod }}<br>{% endif %}
+      {% if f.kund.orgnr %}<small>Org.nr {{ f.kund.orgnr }}</small>{% endif %}
+      {% if f.kund.momsnummer %}<br><small>VAT {{ f.kund.momsnummer }}</small>{% endif %}
+    </div>
+  </div>
+
+  <table class="rader">
+    <thead><tr><th>Beskrivning</th><th class="tal">Antal</th><th>Enhet</th><th class="tal">À-pris</th><th class="tal">Moms</th><th class="tal">Belopp</th></tr></thead>
+    <tbody>{% for r in rader %}
+      <tr><td>{{ r.beskrivning }}</td><td class="tal">{{ r.antal|h }}</td><td>{{ r.enhet }}</td>
+        <td class="tal">{{ r.a_pris|kr }}</td><td class="tal">{{ r.momssats|h|default:"0" }} %</td><td class="tal">{{ r.belopp|kr }}</td></tr>
+    {% endfor %}</tbody>
+  </table>
+
+  <table class="summering">
+    <tr><td>Belopp exkl. moms</td><td class="tal">{{ sum.netto|kr }}</td></tr>
+    {% for sats, m in sum.moms.items %}<tr><td>Moms {{ sats|h|default:"0" }} % (underlag {{ m.underlag|kr }})</td><td class="tal">{{ m.moms|kr }}</td></tr>{% endfor %}
+    {% if sum.oresavrundning %}<tr><td>Öresavrundning</td><td class="tal">{{ sum.oresavrundning|kr }}</td></tr>{% endif %}
+    <tr class="total"><td>Att betala SEK</td><td class="tal">{{ sum.att_betala|kr }}</td></tr>
+  </table>
+
+  {% if f.meddelande %}<div class="meddelande">{{ f.meddelande }}</div>{% endif %}
+  {% if foretag.bankgiro or foretag.plusgiro %}
+  <p style="margin-top:6mm">Betala till {% if foretag.bankgiro %}bankgiro <b>{{ foretag.bankgiro }}</b>{% endif %}{% if foretag.plusgiro %} plusgiro <b>{{ foretag.plusgiro }}</b>{% endif %}. Ange fakturanummer <b>{{ f.nummer }}</b> som referens.</p>
+  {% endif %}
+
+  <div class="fot">
+    <div><b>{{ foretag.namn }}</b>{{ foretag.adress }}<br>{{ foretag.postnummer }} {{ foretag.ort }}</div>
+    <div><b>Kontakt</b>{{ foretag.telefon }}<br>{{ foretag.epost }}<br>{{ foretag.webb }}</div>
+    <div><b>Betalning</b>{% if foretag.bankgiro %}Bankgiro {{ foretag.bankgiro }}<br>{% endif %}{% if foretag.plusgiro %}Plusgiro {{ foretag.plusgiro }}<br>{% endif %}{% if foretag.iban %}IBAN {{ foretag.iban }}<br>BIC {{ foretag.bic }}{% endif %}</div>
+    <div><b>Org.nr {{ foretag.orgnr }}</b>Momsreg.nr {{ foretag.momsnummer }}<br>{% if foretag.f_skatt %}Godkänd för F-skatt{% endif %}</div>
+  </div>
+</div>
+</body>
+</html>

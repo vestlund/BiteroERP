@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>Fakturor</h1>
+  <div class="knappar">
+    <a href="{% url 'fakturor_csv' %}" class="liten-text">Exportera CSV</a>
+    <a href="{% url 'faktura_ny' %}" role="button" class="outline">Manuell faktura</a>
+    <a href="{% url 'fakturera_tid' %}" role="button">Fakturera tid</a>
+  </div>
+</div>
+<p class="knappar liten-text">Visa:
+  <a href="?" {% if not status %}aria-current="page"{% endif %}>Alla</a>
+  {% for k, n in statusval %}<a href="?status={{ k }}" {% if status == k %}aria-current="page"{% endif %}>{{ n }}</a>{% endfor %}
+</p>
+<table>
+  <thead><tr><th>Nr</th><th>Kund</th><th>Fakturadatum</th><th>Förfaller</th><th>Status</th><th class="tal">Netto</th><th class="tal">Att betala</th></tr></thead>
+  <tbody>{% for f in fakturor %}{% with s=f.summering %}
+    <tr><td><a href="{{ f.get_absolute_url }}">{{ f.nummer|default:"utkast" }}</a></td><td>{{ f.kund.namn }}</td>
+      <td>{{ f.fakturadatum }}</td><td>{{ f.forfallodatum|default:"" }}</td>
+      <td><span class="status {{ f.status }}">{{ f.get_status_display }}</span>{% if f.fran_visma %} <span class="status" title="Importerad från Visma">Visma</span>{% endif %}{% if f.bilagor.all %} <span title="Originalfaktura (PDF) finns">📎</span>{% endif %}{% if f.forfallen %} <span class="status forfallen">förfallen</span>{% endif %}</td>
+      <td class="tal">{{ s.netto|kr }}</td><td class="tal">{{ s.att_betala|kr }}</td></tr>
+  {% endwith %}{% empty %}<tr><td colspan="7">Inga fakturor.</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

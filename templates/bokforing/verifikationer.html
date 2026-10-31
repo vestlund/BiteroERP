@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>Verifikationer</h1>
+  <a href="{% url 'verifikation_ny' %}" role="button">+ Ny verifikation</a>
+</div>
+<form method="get" class="filter">
+  <select name="ar" onchange="this.form.submit()">{% for a in ar_lista %}<option value="{{ a|stringformat:'d' }}" {% if ar == a|stringformat:'d' %}selected{% endif %}>{{ a|stringformat:"d" }}</option>{% endfor %}
+    <option value="alla" {% if ar == 'alla' %}selected{% endif %}>Alla år</option></select>
+  <select name="serie" onchange="this.form.submit()"><option value="">Alla serier</option>
+    {% for k, n in serier %}<option value="{{ k }}" {% if serie == k %}selected{% endif %}>{{ k }} – {{ n }}</option>{% endfor %}</select>
+  <input type="search" name="q" value="{{ q }}" placeholder="Sök text, ver.nr, konto eller belopp">
+  <button class="outline">Sök</button>
+</form>
+<table>
+  <thead><tr><th>Ver</th><th>Datum</th><th>Text</th><th>Konton</th><th class="tal">Belopp</th><th></th></tr></thead>
+  <tbody>{% for v in sida %}
+    <tr class="{% if v.rattar_id or v.ar_rattad %}dimmad{% endif %}">
+      <td><a href="{{ v.get_absolute_url }}">{{ v.vernr }}</a></td><td>{{ v.datum }}</td>
+      <td>{{ v.text }}{% if v.ar_rattad %} <span class="status makulerad">rättad</span>{% endif %}</td>
+      <td class="liten-text">{% for t in v.transaktioner.all %}{{ t.konto_id }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+      <td class="tal">{{ v.omsattning|kr }}</td>
+      <td>{% if v.bilagor.all %}📎{% endif %}{% if v.sie_exporterad %} <span title="Exporterad till Visma">⇪</span>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="6">Inga verifikationer.</td></tr>{% endfor %}</tbody>
+</table>
+{% include "sidor.html" %}
+{% endblock %}

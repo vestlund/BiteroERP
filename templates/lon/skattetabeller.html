@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block innehall %}
+<h1>Skattetabeller</h1>
+<div class="tva-kol">
+<article>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <label>{{ form.fil.label }}{{ form.fil }}{{ form.fil.errors }}</label>
+    <button>Importera</button>
+  </form>
+  <p class="liten-text">Hämta skattetabellerna för året som CSV från Skatteverkets öppna data
+    (sök "Skattetabeller" på skatteverket.se eller dataportal.se). Filen ska ha kolumnerna år, antal dgr, tabellnr,
+    inkomst fr.o.m., inkomst t.o.m. och kolumn 1–6. Raderna för månadslön används.</p>
+  <p class="liten-text">Utan importerade tabeller fungerar lönerna ändå: du skriver in skatteavdraget från tabellen,
+    och har lönen samma underlag som förra månaden föreslås förra månadens skatt.</p>
+</article>
+<article>
+  <h3 class="liten-rubrik">Importerade år</h3>
+  <table>{% for f in finns %}<tr><td>{{ f.ar|stringformat:"d" }}</td><td>{{ f.t }} tabeller</td><td>{{ f.n }} rader</td></tr>
+  {% empty %}<tr><td>Inga tabeller importerade.</td></tr>{% endfor %}</table>
+</article>
+</div>
+{% endblock %}

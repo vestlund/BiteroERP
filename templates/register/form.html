@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>{% if obj and typ %}{{ obj }}{% elif obj %}{{ cfg.titel }}{% else %}Ny {{ cfg.singular }}{% endif %}</h1>
+  {% if typ %}<a href="{% url 'register_lista' typ %}">← {{ cfg.titel }}</a>{% elif tillbaka %}<a href="{% url tillbaka.0 %}">← {{ tillbaka.1 }}</a>{% endif %}
+</div>
+<form method="post">{% csrf_token %}
+  {{ form.non_field_errors }}
+  {% for rubrik, falt in grupper %}
+  <article>
+    <h3 class="liten-rubrik">{{ rubrik }}</h3>
+    <div class="formgrid">
+    {% for f in falt %}
+      <label class="{% if f.name == 'anteckning' or f.name == 'namn' %}bred{% endif %}">
+        {% if f.field.widget.input_type == "checkbox" %}{{ f }} {{ f.label|capfirst }}{% else %}{{ f.label|capfirst }}{{ f }}{% endif %}
+        {% if f.help_text %}<small class="hjalp">{{ f.help_text }}</small>{% endif %}{{ f.errors }}
+      </label>
+    {% endfor %}
+    </div>
+  </article>
+  {% endfor %}
+  <div class="knappar">
+    <button type="submit">Spara</button>
+    <a href="javascript:history.back()" role="button" class="secondary outline">Avbryt</a>
+    {% if obj and not ingen_radera %}<button type="submit" name="radera" value="1" class="secondary outline" onclick="return confirm('Radera?')" formnovalidate>Radera</button>{% endif %}
+  </div>
+</form>
+{% if inkop %}
+<h2>Senaste inköp</h2>
+<table>{% for lf in inkop %}<tr><td>{{ lf.fakturadatum }}</td><td><a href="{{ lf.get_absolute_url }}">{{ lf.beskrivning|default:lf.fakturanummer|default:"–" }}</a></td><td>{{ lf.konto_id }}</td><td class="tal">{{ lf.belopp|kr }}</td></tr>{% endfor %}</table>
+{% endif %}
+{% endblock %}

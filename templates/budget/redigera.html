@@ -1,0 +1,79 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<form method="post" id="budgetform">{% csrf_token %}
+<div class="rubrikrad">
+  <h1><input name="namn" value="{{ b.namn }}" class="titelinput"> <small class="dimmad">{{ b.ar|stringformat:"d" }}</small></h1>
+  <div class="knappar">
+    <label class="liten-text"><input type="checkbox" name="huvudbudget" {% if b.huvudbudget %}checked{% endif %}> Huvudbudget</label>
+    <button class="outline">Spara</button><button name="visa" value="1">Spara och följ upp</button>
+  </div>
+</div>
+<article class="verktygsrad liten-text">
+  <b>Fyll timmar:</b> beläggning <input id="vb" value="90" class="mini">% × <input id="vh" value="8" class="mini"> h/arbetsdag
+  från <select id="vm">{% for m in manader %}<option value="{{ forloop.counter }}" {% if forloop.counter == startmanad %}selected{% endif %}>{{ m }}</option>{% endfor %}</select>
+  <button type="button" class="liten outline" id="fyll">Fyll markerade tidrader</button>
+  <span class="dimmad">· Skriv ett årsbelopp i summa-kolumnen för att fördela det jämnt från vald månad.</span>
+</article>
+<div class="budgetskal">
+<table class="budgettabell">
+  <thead><tr><th class="fast">Rad</th><th class="smal">À-pris / konto</th>
+    {% for m in manader %}<th class="tal">{{ m }}<br><small class="dimmad">{{ arbetsdagar|index:forloop.counter0 }} d</small></th>{% endfor %}
+    <th class="tal">Summa</th><th></th></tr></thead>
+  {% for typ, typnamn, rader in grupper %}
+  <tbody data-typ="{{ typ }}">
+    <tr class="grupprubrik"><th colspan="16">{{ typnamn }} <button type="button" class="liten outline nyrad" data-typ="{{ typ }}">+ rad</button></th></tr>
+    {% for r in rader %}{% include "budget/_rad.html" with n=r.pk typ_ny=r.typ %}{% endfor %}
+  </tbody>
+  {% endfor %}
+  <tfoot>
+    <tr class="summa"><td>Timmar</td><td></td>{% for v in summa.timmar %}<td class="tal">{{ v|h }}</td>{% endfor %}<td class="tal">{{ summa.timmar|summa|h }}</td><td></td></tr>
+    <tr class="summa"><td>Intäkter</td><td></td>{% for v in summa.intakter %}<td class="tal">{{ v|kr:0 }}</td>{% endfor %}<td class="tal">{{ summa.intakter|summa|kr:0 }}</td><td></td></tr>
+    <tr class="summa"><td>Kostnader</td><td></td>{% for v in summa.kostnader %}<td class="tal">{{ v|kr:0 }}</td>{% endfor %}<td class="tal">{{ summa.kostnader|summa|kr:0 }}</td><td></td></tr>
+  </tfoot>
+</table>
+</div>
+<p class="hjalp">Summorna längst ner uppdateras när du sparar.</p>
+</form>
+<template id="mall-tid">{% include "budget/_rad.html" with n="NY" typ_ny="tid" %}</template>
+<template id="mall-intakt">{% include "budget/_rad.html" with n="NY" typ_ny="intakt" %}</template>
+<template id="mall-kostnad">{% include "budget/_rad.html" with n="NY" typ_ny="kostnad" %}</template>
+<datalist id="kontolista">{% for k in konton %}<option value="{{ k.nummer }}">{{ k.nummer }} {{ k.namn }}</option>{% endfor %}{% for k in intaktskonton %}<option value="{{ k.nummer }}">{{ k.nummer }} {{ k.namn }}</option>{% endfor %}</datalist>
+{{ arbetsdagar|json_script:"ad" }}
+{% endblock %}
+{% block skript %}
+<script>
+const ad = JSON.parse(document.getElementById("ad").textContent);
+const tal = v => parseFloat(String(v || "").replace(/\s/g, "").replace(",", ".")) || 0;
+let nyttNr = 0;
+function summeraRad(tr) {
+  let s = 0; tr.querySelectorAll(".m").forEach(i => s += tal(i.value));
+  const f = tr.querySelector(".radsumma"); if (document.activeElement !== f) f.value = Math.round(s).toLocaleString("sv-SE");
+}
+document.querySelectorAll(".nyrad").forEach(b => b.addEventListener("click", () => {
+  const html = document.getElementById("mall-" + b.dataset.typ).innerHTML.replaceAll("NY", "ny" + (++nyttNr));
+  b.closest("tbody").insertAdjacentHTML("beforeend", html);
+}));
+document.getElementById("budgetform").addEventListener("input", e => {
+  const tr = e.target.closest("tr.budgetrad"); if (!tr) return;
+  if (e.target.classList.contains("radsumma")) {
+    const fran = +document.getElementById("vm").value, tot = tal(e.target.value), n = 13 - fran;
+    tr.querySelectorAll(".m").forEach((i, idx) => i.value = idx + 1 >= fran ? (Math.round(tot / n * 100) / 100).toString().replace(".", ",") : 0);
+  } else summeraRad(tr);
+});
+document.getElementById("budgetform").addEventListener("change", e => {
+  if (e.target.classList.contains("uppdragsval")) {
+    const o = e.target.selectedOptions[0], tr = e.target.closest("tr");
+    if (o.dataset.pris) tr.querySelector("[name$=-timpris]").value = o.dataset.pris;
+    const besk = tr.querySelector("[name$=-beskrivning]"); if (!besk.value) besk.value = o.textContent.trim();
+  }
+});
+document.getElementById("fyll").addEventListener("click", () => {
+  const bel = tal(document.getElementById("vb").value), h = tal(document.getElementById("vh").value), fran = +document.getElementById("vm").value;
+  document.querySelectorAll("tbody[data-typ=tid] tr.budgetrad").forEach(tr => {
+    if (!tr.querySelector(".markera").checked) return;
+    tr.querySelectorAll(".m").forEach((i, idx) => { if (idx + 1 >= fran) i.value = Math.round(ad[idx] * h * bel / 100); });
+    summeraRad(tr);
+  });
+});
+</script>
+{% endblock %}

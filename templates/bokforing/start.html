@@ -1,0 +1,47 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>Bokföring {{ ar|stringformat:"d" }}</h1>
+  <div class="knappar">
+    <a href="{% url 'levfaktura_ny' %}?typ=kvitto" role="button" class="outline">+ Kvitto</a>
+    <a href="{% url 'levfaktura_ny' %}" role="button" class="outline">+ Leverantörsfaktura</a>
+    <a href="{% url 'verifikation_ny' %}" role="button">+ Verifikation</a>
+  </div>
+</div>
+<div class="kpi">
+  <article><div class="etikett">Resultat hittills i år</div><div class="varde">{{ resultat|kr:0 }} kr</div></article>
+  <article><div class="etikett">Bank (1930)</div><div class="varde">{{ saldo|get:1930|default:0|kr:0 }} kr</div></article>
+  <article><div class="etikett">Skattekonto (1630)</div><div class="varde">{{ saldo|get:1630|default:0|kr:0 }} kr</div></article>
+  <article><div class="etikett">Kundfordringar</div><div class="varde">{{ saldo|get:1510|default:0|kr:0 }} kr</div></article>
+  <article><div class="etikett">Leverantörsskulder</div><div class="varde">{{ saldo|get:2440|default:0|neg|kr:0 }} kr</div></article>
+</div>
+{% if bank_att_hantera or lev_obetalda or ej_bokforda or ej_exp %}
+<article>
+  <h3 class="liten-rubrik">Att göra</h3>
+  <ul class="attgora">
+  {% if bank_att_hantera %}<li><a href="{% url 'bank' %}">{{ bank_att_hantera }} bankposter</a> väntar på att stämmas av</li>{% endif %}
+  {% if lev_obetalda %}<li><a href="{% url 'levfakturor' %}">{{ lev_obetalda }} obetalda leverantörsfakturor</a></li>{% endif %}
+  {% if ej_bokforda %}<li><a href="{% url 'faktura_lista' %}">{{ ej_bokforda }} kundfakturor</a> skapades före bokföringen fanns. Öppna dem och klicka "Bokför fakturan" om de ska in</li>{% endif %}
+  {% if ej_exp %}<li><a href="{% url 'sie' %}">{{ ej_exp }} verifikationer</a> har inte exporterats till Visma</li>{% endif %}
+  </ul>
+</article>
+{% endif %}
+<div class="tva-kol">
+<section>
+<h2>Senaste verifikationer</h2>
+<table>
+  <tbody>{% for v in senaste %}
+    <tr><td><a href="{{ v.get_absolute_url }}">{{ v.vernr }}</a></td><td>{{ v.datum }}</td><td>{{ v.text|truncatechars:50 }}</td><td class="tal">{{ v.omsattning|kr }}</td></tr>
+  {% empty %}<tr><td>Inga verifikationer ännu.</td></tr>{% endfor %}</tbody>
+</table>
+<a href="{% url 'verifikationer' %}">Alla verifikationer →</a>
+</section>
+<section>
+<h2>Skattekonto och vanliga händelser</h2>
+<article class="liten-text">
+  <p>Mallar fyller i konton åt dig. Du anger bara datum och belopp.</p>
+  <ul class="mallista">{% for m in mallar %}<li><a href="{% url 'verifikation_ny' %}?mall={{ m.id }}">{{ m.namn }}</a></li>{% endfor %}</ul>
+</article>
+</section>
+</div>
+{% endblock %}

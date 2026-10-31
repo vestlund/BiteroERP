@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block titel %}Systemdokumentation{% endblock %}
+{% block innehall %}
+<div class="rubrikrad"><h1>Systemdokumentation</h1>
+  <button class="outline" onclick="window.print()">Skriv ut / spara PDF</button></div>
+<p class="dimmad">Programversion {{ version }}{% if senaste %}{% if senaste.git %} (git {{ senaste.git }}){% endif %}, i bruk sedan {{ senaste.tid|date:"Y-m-d H:i" }}{% endif %}.
+  Skriv ut en kopia och spara den med bokslutet varje år – dokumentationen är räkenskapsinformation.</p>
+<article class="dokument">{{ innehall }}</article>
+{% endblock %}

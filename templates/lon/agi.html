@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad"><h1>Arbetsgivardeklaration {{ period }}</h1>
+  <form method="get" class="filter"><input type="month" name="period" value="{{ period }}" onchange="this.form.submit()"></form></div>
+{% if not d.individer %}<article>Inga bokförda löner med utbetalning i {{ period }}.</article>{% else %}
+<div class="tva-kol">
+<section>
+<h2>Individuppgifter</h2>
+{% for a, i in d.individer.items %}
+<article>
+  <h3 class="liten-rubrik">{{ a.namn }} <small class="dimmad">{{ a.personnummer }}</small></h3>
+  <table class="liten-text">
+    <tr><td class="rutnr">011</td><td>Kontant bruttolön m.m.</td><td class="tal">{{ i.011|kr:0 }}</td></tr>
+    {% if i.012 %}<tr><td class="rutnr">012</td><td>Skattepliktiga förmåner utom bil och drivmedel</td><td class="tal">{{ i.012|kr:0 }}</td></tr>{% endif %}
+    {% if i.013 %}<tr><td class="rutnr">013</td><td>Skattepliktig bilförmån</td><td class="tal">{{ i.013|kr:0 }}</td></tr>{% endif %}
+    <tr><td class="rutnr">001</td><td>Avdragen preliminär skatt</td><td class="tal">{{ i.001|kr:0 }}</td></tr>
+    {% if i.skattefritt %}<tr><td></td><td class="dimmad">Skattefria traktamenten/bilersättning (redovisas inte som belopp, men markera ev. rutorna för traktamente/bilersättning)</td><td class="tal dimmad">{{ i.skattefritt|kr:0 }}</td></tr>{% endif %}
+  </table>
+</article>
+{% endfor %}
+</section>
+<section>
+<h2>Huvuduppgift</h2>
+<article>
+  <table>
+    {% for g, v in d.grupper.items %}<tr><td>{{ grupp_namn|get:g }}<br><small class="dimmad">Underlag {{ v.underlag|kr:0 }} kr</small></td><td class="tal">{{ v.avgift|kr:0 }}</td></tr>{% endfor %}
+    <tr class="summa"><td>Summa arbetsgivaravgifter</td><td class="tal">{{ d.summa_avgift|kr:0 }}</td></tr>
+    <tr class="summa"><td>Summa avdragen skatt</td><td class="tal">{{ d.summa_skatt|kr:0 }}</td></tr>
+    <tr class="summa"><td>Att betala till skattekontot</td><td class="tal">{{ d.summa_avgift|add:d.summa_skatt|kr:0 }}</td></tr>
+  </table>
+  <p class="liten-text">Lämnas i Skatteverkets e-tjänst <i>Arbetsgivardeklaration</i>. Deklarera och betala senast <b>{{ deadline }}</b>
+    (gäller företag med beskattningsunderlag upp till 40 miljoner kr; kontrollera dagen hos Skatteverket).
+    När beloppet dragits från skattekontot: bokför mallen <a href="{% url 'verifikation_ny' %}?mall=lonskatt">Arbetsgivaravgifter + personalskatt dras</a>.</p>
+</article>
+</section>
+</div>
+{% endif %}
+{% endblock %}

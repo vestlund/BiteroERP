@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>Inköp</h1>
+  <div class="knappar">
+    <a href="{% url 'levfaktura_ny' %}?typ=kvitto" role="button" class="outline">+ Kvitto</a>
+    <a href="{% url 'levfaktura_ny' %}" role="button">+ Leverantörsfaktura</a>
+  </div>
+</div>
+<p class="knappar liten-text">Visa:
+  <a href="?visa=obetalda" {% if visa == 'obetalda' %}aria-current="page"{% endif %}>Obetalda fakturor ({{ obetalt|kr:0 }} kr)</a>
+  <a href="?visa=kvitton" {% if visa == 'kvitton' %}aria-current="page"{% endif %}>Kvitton</a>
+  <a href="?visa=alla" {% if visa == 'alla' %}aria-current="page"{% endif %}>Alla</a>
+</p>
+<table>
+  <thead><tr><th>Datum</th><th>Motpart</th><th>Beskrivning</th><th>Konto</th><th>Förfaller</th><th>Status</th><th class="tal">Belopp</th><th class="tal">Moms</th><th></th></tr></thead>
+  <tbody>{% for lf in sida %}
+    <tr><td>{{ lf.fakturadatum }}</td><td><a href="{{ lf.get_absolute_url }}">{{ lf.motpartsnamn }}</a></td>
+      <td>{{ lf.beskrivning|default:lf.fakturanummer|truncatechars:40 }}</td><td>{{ lf.konto_id }}</td>
+      <td>{% if lf.typ == 'faktura' %}{{ lf.forfallodatum|default:"" }}{% endif %}</td>
+      <td><span class="status {{ lf.status }}">{% if lf.status == 'forfallen' %}förfallen{% else %}{{ lf.status }}{% endif %}</span></td>
+      <td class="tal">{{ lf.belopp|kr }}</td><td class="tal">{{ lf.moms|kr }}</td><td>{% if lf.bilagor.all %}📎{% endif %}{% if lf.fran_visma %}<span class="status" title="Importerad från Visma">Visma</span>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="9">Inget här.</td></tr>{% endfor %}</tbody>
+</table>
+{% include "sidor.html" %}
+{% endblock %}

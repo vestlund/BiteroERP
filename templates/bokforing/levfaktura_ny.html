@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>{% if typ == 'kvitto' %}Nytt kvitto{% else %}Ny leverantörsfaktura{% endif %}</h1>
+  <div class="knappar liten-text">
+    {% if typ == 'kvitto' %}<a href="?typ=faktura">Byt till leverantörsfaktura</a>{% else %}<a href="?typ=kvitto">Byt till kvitto</a>{% endif %}
+  </div>
+</div>
+<form method="post" enctype="multipart/form-data" id="levform">{% csrf_token %}
+<div class="tva-kol">
+<article>
+  {% if form.non_field_errors %}<p class="meddelande error">{{ form.non_field_errors|join:" " }}</p>{% endif %}
+  <input type="hidden" name="typ" value="{{ typ }}">
+  <div class="formgrid">
+    <label class="bred">Leverantör{{ form.leverantor }}{{ form.leverantor.errors }}</label>
+    {% if typ == 'kvitto' %}<label class="bred">…eller motpart (butik, restaurang){{ form.motpart }}{{ form.motpart.errors }}</label>{% endif %}
+    <label>{{ form.fakturadatum.label|capfirst }}{{ form.fakturadatum }}{{ form.fakturadatum.errors }}</label>
+    {% if typ == 'faktura' %}
+    <label>Förfallodatum{{ form.forfallodatum }}</label>
+    <label>Fakturanummer{{ form.fakturanummer }}</label>
+    <label>OCR/referens{{ form.ocr }}</label>
+    {% endif %}
+    <label class="bred">Beskrivning{{ form.beskrivning }}</label>
+    <label>Belopp inkl. moms{{ form.belopp }}{{ form.belopp.errors }}</label>
+    <label>Moms{{ form.momssats }}</label>
+    <label>Varav moms{{ form.moms }}{{ form.moms.errors }}</label>
+    <label class="bred">Kostnadskonto{{ form.konto }}{{ form.konto.errors }}<small class="hjalp">Föreslås från leverantörens tidigare inköp</small></label>
+    {% if typ == 'kvitto' %}<label class="bred">Betalt från{{ form.betalkonto }}<small class="hjalp">1930 = företagets konto/kort, 2893 = du har lagt ut privat</small></label>{% endif %}
+    <label class="bred">Bilaga{{ form.bilaga }}<small class="hjalp">{{ form.bilaga.help_text }}</small></label>
+  </div>
+  <p class="liten-text" id="kontering"></p>
+  <div class="knappar">
+    <button type="submit">Bokför</button>
+    <button type="submit" name="fler" value="1" class="outline">Bokför och registrera nästa</button>
+  </div>
+</article>
+<article id="forhandsvisning" class="forhand"><p class="dimmad">Välj en fil så visas den här.</p></article>
+</div>
+</form>
+{{ lev|json_script:"lev" }}
+{% endblock %}
+{% block skript %}
+<script>
+const lev = JSON.parse(document.getElementById("lev").textContent);
+const $ = n => document.querySelector(`[name=${n}]`);
+const tal = v => parseFloat(String(v || "").replace(/\s/g, "").replace(",", ".")) || 0;
+const fmt = v => v.toLocaleString("sv-SE", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+function raknaMoms() {
+  const sats = $("momssats").value;
+  if (sats === "") { $("moms").readOnly = false; visa(); return; }
+  $("moms").readOnly = true;
+  const b = tal($("belopp").value), s = parseFloat(sats);
+  $("moms").value = (Math.round(b * s / (100 + s) * 100) / 100).toFixed(2).replace(".", ",");
+  visa();
+}
+function visa() {
+  const b = tal($("belopp").value), m = tal($("moms").value), k = $("konto");
+  const kontotext = k.selectedIndex > 0 ? k.options[k.selectedIndex].text : "kostnadskonto";
+  const mot = "{{ typ }}" === "kvitto" ? ($("betalkonto").selectedIndex > 0 ? $("betalkonto").options[$("betalkonto").selectedIndex].text : "1930") : "2440 Leverantörsskulder";
+  document.getElementById("kontering").innerHTML = b ? `Bokförs: debet ${kontotext} <b>${fmt(b - m)}</b>` +
+    (m ? `, debet 2641 Ingående moms <b>${fmt(m)}</b>` : "") + `, kredit ${mot} <b>${fmt(b)}</b>` : "";
+}
+$("leverantor").addEventListener("change", e => {
+  const l = lev[e.target.value]; if (!l) return;
+  if (l.konto) $("konto").value = l.konto;
+  const sats = String(parseInt(l.moms)); if ([...$("momssats").options].some(o => o.value === sats)) $("momssats").value = sats;
+  const fd = $("fakturadatum"), ff = $("forfallodatum");
+  if (ff && fd.value && !ff.value) { const d = new Date(fd.value); d.setDate(d.getDate() + l.dagar); ff.value = d.toISOString().slice(0, 10); }
+  raknaMoms();
+});
+["belopp", "momssats"].forEach(n => $(n).addEventListener("input", raknaMoms));
+["moms", "konto"].forEach(n => $(n).addEventListener("input", visa));
+if ($("betalkonto")) $("betalkonto").addEventListener("change", visa);
+$("bilaga").addEventListener("change", e => {
+  const f = e.target.files[0], box = document.getElementById("forhandsvisning"); if (!f) return;
+  const url = URL.createObjectURL(f);
+  box.innerHTML = f.type === "application/pdf" ? `<iframe src="${url}"></iframe>` : `<img src="${url}" alt="">`;
+});
+raknaMoms();
+</script>
+{% endblock %}

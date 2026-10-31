@@ -1,0 +1,43 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>Resultat och balans</h1>
+  <form method="get" class="filter">{{ form.fran }}{{ form.till }}<button class="outline">Visa</button>
+    <button type="button" class="outline secondary" onclick="window.print()">Skriv ut</button></form>
+</div>
+<div class="kpi">
+  <article><div class="etikett">Intäkter</div><div class="varde">{{ intakter|kr:0 }}</div></article>
+  <article><div class="etikett">Resultat</div><div class="varde">{{ resultat|kr:0 }}</div></article>
+  <article><div class="etikett">Summa tillgångar</div><div class="varde">{{ tillgangar|kr:0 }}</div></article>
+</div>
+{% if not har_ib %}<p class="meddelande warning">Inga ingående balanser för {{ fran|date:"Y" }}. Balansräkningen visar bara årets rörelser. <a href="{% url 'sie' %}">Importera IB från Visma</a>.</p>{% endif %}
+{% if balansdiff %}<p class="meddelande warning">Balansräkningen går inte jämnt ut (differens {{ balansdiff|kr }}). Det beror oftast på att de ingående balanserna saknas eller är ofullständiga.</p>{% endif %}
+<div class="tva-kol">
+<section>
+<h2>Resultaträkning {{ fran }} – {{ till }}</h2>
+<table>
+{% for k, g in grupper.items %}{% if k >= 3 %}
+  <tr><th colspan="2" class="grupprubrik">{{ g.namn }}</th></tr>
+  {% for r in g.konton %}<tr><td><a href="{% url 'huvudbok' %}?konto={{ r.nr }}&fran={{ fran|date:'Y-m-d' }}&till={{ till|date:'Y-m-d' }}">{{ r.nr }}</a> {{ r.namn }}</td><td class="tal">{{ r.period|neg|kr }}</td></tr>{% endfor %}
+  <tr class="delsumma"><td>Summa</td><td class="tal">{{ g.period|neg|kr }}</td></tr>
+{% endif %}{% endfor %}
+<tr class="summa"><td>Resultat</td><td class="tal">{{ resultat|kr }}</td></tr>
+</table>
+</section>
+<section>
+<h2>Balansräkning per {{ till }}</h2>
+<table>
+  <tr><th></th><th class="tal">IB</th><th class="tal">Förändring</th><th class="tal">UB</th></tr>
+{% for k, g in grupper.items %}{% if k <= 2 %}
+  <tr><th colspan="4" class="grupprubrik">{{ g.namn }}</th></tr>
+  {% for r in g.konton %}<tr><td><a href="{% url 'huvudbok' %}?konto={{ r.nr }}&fran={{ fran|date:'Y-m-d' }}&till={{ till|date:'Y-m-d' }}">{{ r.nr }}</a> {{ r.namn }}</td>
+    <td class="tal">{% if k == 2 %}{{ r.ib|neg|kr }}{% else %}{{ r.ib|kr }}{% endif %}</td>
+    <td class="tal">{% if k == 2 %}{{ r.period|neg|kr }}{% else %}{{ r.period|kr }}{% endif %}</td>
+    <td class="tal">{% if k == 2 %}{{ r.ub|neg|kr }}{% else %}{{ r.ub|kr }}{% endif %}</td></tr>{% endfor %}
+  <tr class="delsumma"><td>Summa</td><td></td><td></td><td class="tal">{% if k == 2 %}{{ g.ub|neg|kr }}{% else %}{{ g.ub|kr }}{% endif %}</td></tr>
+{% endif %}{% endfor %}
+<tr><td>Årets resultat (ej bokslutat)</td><td></td><td></td><td class="tal">{{ resultat|kr }}</td></tr>
+</table>
+</section>
+</div>
+{% endblock %}

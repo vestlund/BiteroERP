@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>Uppdrag</h1>
+  <div class="knappar">
+    {% if visa_alla %}<a href="?">Visa bara aktiva</a>{% else %}<a href="?alla=1">Visa även avslutade</a>{% endif %}
+    <a href="{% url 'uppdrag_nytt' %}" role="button">Nytt uppdrag</a>
+  </div>
+</div>
+<table>
+  <thead><tr><th>Uppdrag</th><th>Kund</th><th>Artikel</th><th class="tal">Pris</th><th>Period</th><th class="tal">Timmar</th><th class="tal">Ofakturerat</th></tr></thead>
+  <tbody>
+  {% for u in uppdrag %}
+    <tr class="{% if not u.aktiv %}dimmad{% endif %}">
+      <td><a href="{{ u.get_absolute_url }}">{{ u.namn }}</a></td>
+      <td>{{ u.kund.namn }}</td><td>{{ u.artikel.namn|default:"–" }}</td>
+      <td class="tal">{{ u.pris|kr:0 }}</td>
+      <td>{{ u.startdatum|default:"" }}{% if u.slutdatum %} – {{ u.slutdatum }}{% endif %}</td>
+      <td class="tal">{{ u.totalt|h|default:"0" }}</td><td class="tal">{{ u.ofakt|h|default:"–" }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="7">Inga uppdrag ännu.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

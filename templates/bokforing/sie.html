@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block innehall %}
+<h1>Visma (SIE)</h1>
+<div class="tva-kol">
+<article>
+  <h3 class="liten-rubrik">Exportera verifikationer till Visma</h3>
+  <form method="get">
+    <div class="formgrid">
+      <label>Från{{ export_form.fran }}</label><label>Till{{ export_form.till }}</label>
+      <label class="bred">{{ export_form.endast_nya }} {{ export_form.endast_nya.label }}</label>
+      <div class="bred serieval">{{ export_form.serier }}</div>
+    </div>
+    <button name="exportera" value="1">Ladda ner SIE-fil</button>
+  </form>
+  <p class="liten-text">{{ ej_exp }} verifikationer har inte exporterats ännu. I Visma eEkonomi: <i>Bokföring → Importera → SIE</i> (verifikationer).
+    Kontrollera första importen noga. Bokför du samma sak direkt i Visma blir det dubbelt.</p>
+</article>
+<article>
+  <h3 class="liten-rubrik">Importera ingående balanser från Visma</h3>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    {{ import_form.fil }}{{ import_form.fil.errors }}
+    <button class="outline">Importera IB</button>
+  </form>
+  <p class="liten-text">Exportera en SIE 4-fil för räkenskapsåret från Visma. Här läses bara de ingående balanserna (#IB),
+    så att balansräkningen och saldona stämmer. Importerar du igen ersätts IB för året.</p>
+  {% if ib %}<table class="liten-text">{% for r in ib %}<tr><td>IB {{ r.ar|stringformat:"d" }}</td><td>importerad{% if r.s %} (summa {{ r.s }} – bör vara 0){% endif %}</td></tr>{% endfor %}</table>{% endif %}
+</article>
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>Ny verifikation</h1>
+  <label class="mallval">Mall:
+    <select id="mall"><option value="">– välj för att fylla i konton –</option>
+      {% for m in mallar %}<option value="{{ m.id }}">{{ m.namn }}</option>{% endfor %}</select></label>
+</div>
+<form method="post" enctype="multipart/form-data">{% csrf_token %}
+<article>
+  {% if form.non_field_errors %}<p class="meddelande error">{{ form.non_field_errors|join:" " }}</p>{% endif %}
+  <div class="formgrid">
+    <label>Datum{{ form.datum }}{{ form.datum.errors }}</label>
+    <label class="bred2">Text{{ form.text }}{{ form.text.errors }}</label>
+    <label>Belopp <small class="dimmad">(fyller mallens rader)</small><input type="text" id="mallbelopp" inputmode="decimal" placeholder="t.ex. 12 500"></label>
+  </div>
+</article>
+<article>
+  {{ rader.management_form }}
+  <table class="rader verrader">
+    <thead><tr><th style="width:28%">Konto</th><th style="width:14%">Debet</th><th style="width:14%">Kredit</th><th>Text (valfri)</th></tr></thead>
+    <tbody>{% for r in rader %}
+      <tr><td>{{ r.konto }}<small class="kontonamn dimmad"></small>{% for e in r.non_field_errors %}<div class="errorlist">{{ e }}</div>{% endfor %}</td>
+        <td>{{ r.debet }}</td><td>{{ r.kredit }}</td><td>{{ r.text }}</td></tr>
+    {% endfor %}</tbody>
+    <tfoot><tr class="summa"><td>Summa <span id="diff" class="status"></span></td><td class="tal" id="sdebet"></td><td class="tal" id="skredit"></td><td></td></tr></tfoot>
+  </table>
+  <datalist id="kontolista">{% for nr, namn in konton %}<option value="{{ nr }}">{{ nr }} {{ namn }}</option>{% endfor %}</datalist>
+  <label>Bilaga {{ form.bilaga }}<small class="hjalp">{{ form.bilaga.help_text }}</small></label>
+  <div class="knappar">
+    <button type="submit" id="spara">Bokför</button>
+    <button type="submit" name="fler" value="1" class="outline">Bokför och skapa ny</button>
+  </div>
+</article>
+</form>
+{{ konton|json_script:"konton" }}{{ mallar|json_script:"mallar" }}
+{% endblock %}
+{% block skript %}
+<script>
+const konton = Object.fromEntries(JSON.parse(document.getElementById("konton").textContent));
+const mallar = JSON.parse(document.getElementById("mallar").textContent);
+const tal = v => parseFloat(String(v || "").replace(/\s/g, "").replace(",", ".")) || 0;
+const fmt = v => v.toLocaleString("sv-SE", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const rader = [...document.querySelectorAll(".verrader tbody tr")];
+function uppdatera() {
+  let d = 0, k = 0;
+  rader.forEach(tr => {
+    const nr = tr.querySelector(".kontoinput").value;
+    tr.querySelector(".kontonamn").textContent = konton[nr] ? " " + konton[nr] : (nr ? " okänt konto" : "");
+    d += tal(tr.querySelector(".debet").value); k += tal(tr.querySelector(".kredit").value);
+  });
+  document.getElementById("sdebet").textContent = fmt(d);
+  document.getElementById("skredit").textContent = fmt(k);
+  const diff = Math.round((d - k) * 100) / 100, el = document.getElementById("diff");
+  el.textContent = diff === 0 ? (d ? "balanserar ✓" : "") : "differens " + fmt(diff);
+  el.className = "status " + (diff === 0 ? "betald" : "forfallen");
+}
+function fyllMall(id) {
+  const m = mallar.find(x => x.id === id); if (!m) return;
+  const belopp = tal(document.getElementById("mallbelopp").value);
+  rader.forEach(tr => tr.querySelectorAll("input").forEach(i => i.value = ""));
+  m.rader.forEach(([konto, sida], i) => {
+    const tr = rader[i];
+    tr.querySelector(".kontoinput").value = konto;
+    if (belopp && m.rader.length === 2) tr.querySelector(sida === "+" ? ".debet" : ".kredit").value = belopp.toFixed(2).replace(".", ",");
+  });
+  const text = document.querySelector("[name=text]"); if (!text.value) text.value = m.namn;
+  uppdatera();
+}
+document.getElementById("mall").addEventListener("change", e => fyllMall(e.target.value));
+document.getElementById("mallbelopp").addEventListener("input", () => fyllMall(document.getElementById("mall").value));
+document.querySelector(".verrader").addEventListener("input", uppdatera);
+// Fyll automatiskt motsatt sida på sista raden med differensen när man går in i en tom beloppsruta
+document.querySelectorAll(".debet, .kredit").forEach(inp => inp.addEventListener("focus", () => {
+  if (inp.value) return;
+  let d = 0; rader.forEach(tr => d += tal(tr.querySelector(".debet").value) - tal(tr.querySelector(".kredit").value));
+  if (!d) return;
+  if (inp.classList.contains("debet") && d < 0) inp.value = (-d).toFixed(2).replace(".", ",");
+  if (inp.classList.contains("kredit") && d > 0) inp.value = d.toFixed(2).replace(".", ",");
+  inp.select(); uppdatera();
+}));
+const mallParam = new URLSearchParams(location.search).get("mall");
+if (mallParam) { document.getElementById("mall").value = mallParam; fyllMall(mallParam); }
+uppdatera();
+</script>
+{% endblock %}

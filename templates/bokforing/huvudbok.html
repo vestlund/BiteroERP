@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>Huvudbok</h1>
+  <form method="get" class="filter">
+    <input name="konto" value="{{ konto_q }}" placeholder="Konto eller intervall, t.ex. 1930 eller 3000-3999" list="kl">
+    {{ form.fran }}{{ form.till }}<button class="outline">Visa</button></form>
+</div>
+{% for k in konton %}
+<h2>{{ k.nr }} {{ k.namn }}</h2>
+<table class="liten-text">
+  <thead><tr><th style="width:9%">Ver</th><th style="width:10%">Datum</th><th>Text</th><th class="tal">Debet</th><th class="tal">Kredit</th><th class="tal">Saldo</th></tr></thead>
+  <tbody>
+    <tr class="dimmad"><td></td><td>{{ fran }}</td><td>Ingående saldo</td><td></td><td></td><td class="tal">{{ k.ib|kr }}</td></tr>
+    {% for r in k.rader %}<tr><td><a href="{{ r.t.verifikation.get_absolute_url }}">{{ r.t.verifikation.vernr }}</a></td><td>{{ r.t.verifikation.datum }}</td>
+      <td>{{ r.t.verifikation.text }}{% if r.t.text %} – {{ r.t.text }}{% endif %}</td><td class="tal">{{ r.t.debet|kr }}</td><td class="tal">{{ r.t.kredit|kr }}</td><td class="tal">{{ r.saldo|kr }}</td></tr>{% endfor %}
+    <tr class="summa"><td></td><td>{{ till }}</td><td>Utgående saldo</td><td class="tal">{{ k.debet|kr }}</td><td class="tal">{{ k.kredit|kr }}</td><td class="tal">{{ k.ub|kr }}</td></tr>
+  </tbody>
+</table>
+{% empty %}<article>Inga transaktioner för urvalet.</article>{% endfor %}
+{% endblock %}

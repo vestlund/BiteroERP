@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block innehall %}
+<h1>Import och export</h1>
+<form method="get" class="filter"><input type="search" name="q" value="{{ q }}" placeholder="Sök"></form>
+<table class="klickbar">
+  <thead><tr><th>Namn</th></tr></thead>
+  <tbody>{% for slug, namn in poster %}
+    <tr onclick="location.href='{% url 'io_post' slug %}'"><td><a href="{% url 'io_post' slug %}">{{ namn }}</a></td></tr>
+  {% endfor %}</tbody>
+</table>
+{% endblock %}

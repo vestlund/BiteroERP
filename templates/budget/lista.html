@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad"><h1>Budgetar och prognoser</h1><a href="{% url 'budget_ny' %}" role="button">+ Ny budget</a></div>
+<table class="klickbar">
+  <thead><tr><th>År</th><th>Namn</th><th class="tal">Intäkter</th><th class="tal">Kostnader</th><th class="tal">Resultat</th><th></th><th></th></tr></thead>
+  <tbody>{% for b in budgetar %}{% with p=b.per_manad %}
+    <tr onclick="location.href='{{ b.get_absolute_url }}'"><td>{{ b.ar|stringformat:"d" }}</td><td><a href="{{ b.get_absolute_url }}">{{ b.namn }}</a>{% if b.huvudbudget %} <span class="status betald">huvudbudget</span>{% endif %}</td>
+      <td class="tal">{{ p.intakter|summa|kr:0 }}</td><td class="tal">{{ p.kostnader|summa|kr:0 }}</td>
+      <td class="tal">{{ p.intakter|summa|sub:p.kostnader|kr:0 }}</td>
+      <td><a href="{% url 'budget_redigera' b.pk %}" onclick="event.stopPropagation()">Redigera</a></td>
+      <td><form method="post" action="{% url 'budget_radera' b.pk %}" onclick="event.stopPropagation()">{% csrf_token %}<button class="lank" onclick="return confirm('Radera budgeten?')">Radera</button></form></td></tr>
+  {% endwith %}{% empty %}<tr><td colspan="7">Inga budgetar ännu. Skapa en, så föreslås rader utifrån dina uppdrag och kostnader.</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

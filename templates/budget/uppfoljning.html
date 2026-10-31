@@ -1,0 +1,82 @@
+{% extends "base.html" %}{% load kr static %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>Budgetuppföljning – {{ b.namn }}</h1>
+  <div class="knappar">
+    {% if andra %}<select onchange="location.href=this.value" class="liten-select"><option>Byt budget …</option>{% for a in andra %}<option value="{{ a.get_absolute_url }}">{{ a }}</option>{% endfor %}</select>{% endif %}
+    <a href="{% url 'budget_redigera' b.pk %}" role="button" class="outline">Redigera budget</a>
+  </div>
+</div>
+<div class="kpi">
+  <article><div class="etikett">Intäkter, budget helår</div><div class="varde">{{ s.budget_intakter|kr:0 }}</div></article>
+  <article><div class="etikett">Intäkter, prognos helår</div><div class="varde">{{ s.prognos_intakter|kr:0 }}</div>
+    <div class="under">{% with d=s.prognos_intakter|sub:s.budget_intakter %}{% if d >= 0 %}+{% endif %}{{ d|kr:0 }} mot budget{% endwith %}</div></article>
+  {% if s.takt is not None %}<article class="{% if s.takt < 95 %}varning{% endif %}"><div class="etikett">Takt hittills i år</div><div class="varde">{{ s.takt|kr:0 }} %</div>
+    <div class="under">{{ s.hittills_utfall|kr:0 }} av {{ s.hittills_budget|kr:0 }} kr</div></article>{% endif %}
+  <article><div class="etikett">Resultat, prognos helår</div><div class="varde">{{ s.prognos_resultat|kr:0 }}</div><div class="under">Budget {{ s.budget_resultat|kr:0 }}</div></article>
+  <article><div class="etikett">Timmar</div><div class="varde">{{ s.utfall_timmar|h|default:"0" }}</div><div class="under">av {{ s.budget_timmar|h|default:"0" }} budgeterade</div></article>
+</div>
+
+<div class="dash">
+  <section class="kort">
+    <div class="kort-rubrik"><h2>Intäkter per månad</h2></div>
+    <div class="kort-under">Utfall = det största av upparbetat (tid × pris) och fakturerat/bokfört</div>
+    <div id="manadsdiagram"></div>
+    <div class="forklaring"><span><i class="ram" style="border-color:#2a78d6"></i>Budget</span><span><i style="background:#2a78d6"></i>Utfall</span></div>
+  </section>
+  <section class="kort">
+    <div class="kort-rubrik"><h2>Ackumulerat</h2></div>
+    <div class="kort-under">Hur du taktar mot budget och var året landar</div>
+    <div id="ackdiagram"></div>
+    <div class="forklaring"><span><i style="background:#9aa3a0"></i>Budget</span><span><i style="background:#2a78d6"></i>Utfall</span><span><i style="background:#1baf7a"></i>Prognos (streckad)</span></div>
+  </section>
+</div>
+
+<section class="kort">
+  <div class="kort-rubrik"><h2>Månad för månad</h2><span class="liten-text dimmad">Avslutade månader visar utfall, resten budget</span></div>
+  <div class="budgetskal">
+  <table class="liten-text uppfoljning">
+    <thead><tr><th>Månad</th><th class="tal">Timmar budget</th><th class="tal">Timmar utfall</th><th class="tal">Intäkt budget</th>
+      <th class="tal">Upparbetat</th><th class="tal">Fakturerat</th><th class="tal">Kostnad budget</th><th class="tal">Kostnad utfall</th>
+      <th class="tal">Resultat budget</th><th class="tal">Resultat utfall</th><th class="tal">Resultat prognos</th></tr></thead>
+    <tbody>{% for r in tabell %}
+      <tr class="{% if r.aktuell %}aktuell{% elif not r.stangd %}framtid{% endif %}"><td>{{ r.manad }}{% if r.aktuell %} ◀{% endif %}</td>
+        <td class="tal">{{ r.tim_b|h }}</td><td class="tal {% if r.stangd and r.tim_u < r.tim_b %}under-budget{% endif %}">{{ r.tim_u|h }}</td>
+        <td class="tal">{{ r.int_b|kr:0 }}</td><td class="tal">{{ r.upparb|kr:0 }}</td><td class="tal">{{ r.fakt|kr:0 }}</td>
+        <td class="tal">{{ r.kost_b|kr:0 }}</td><td class="tal">{{ r.kost_u|kr:0 }}</td>
+        <td class="tal">{{ r.res_b|kr:0 }}</td><td class="tal">{{ r.res_u|kr:0 }}</td><td class="tal"><b>{{ r.res_p|kr:0 }}</b></td></tr>
+    {% endfor %}</tbody>
+  </table>
+  </div>
+</section>
+
+<section class="kort" style="margin-top:1rem">
+  <div class="kort-rubrik"><h2>Per budgetrad</h2></div>
+  <table class="liten-text">
+    <thead><tr><th>Rad</th><th>Typ</th><th class="tal">Budget helår</th><th class="tal">Utfall hittills</th><th class="tal">Budget hittills</th><th class="tal">Avvikelse hittills</th></tr></thead>
+    <tbody>{% for x in u.radlista %}{% with r=x.rad %}
+      <tr><td>{{ r.beskrivning }}</td><td>{{ r.get_typ_display }}</td><td class="tal">{% if r.typ == 'tid' %}{{ r.summa|h }} h{% else %}{{ r.summa|kr:0 }}{% endif %}</td>
+        {% if x.utfall %}{% with uh=x.utfall|slice:u.stangda|summa bh=r.varden|slice:u.stangda|summa %}
+        <td class="tal">{% if r.typ == 'tid' %}{{ uh|h|default:"0" }} h{% else %}{{ uh|kr:0 }}{% endif %}</td>
+        <td class="tal">{% if r.typ == 'tid' %}{{ bh|h|default:"0" }} h{% else %}{{ bh|kr:0 }}{% endif %}</td>
+        <td class="tal">{% with d=uh|sub:bh %}{% if d >= 0 %}+{% endif %}{% if r.typ == 'tid' %}{{ d|h|default:"0" }} h{% else %}{{ d|kr:0 }}{% endif %}{% endwith %}</td>
+        {% endwith %}{% else %}<td colspan="3" class="dimmad">Följs upp på totalnivå</td>{% endif %}</tr>
+    {% endwith %}{% endfor %}</tbody>
+  </table>
+</section>
+{{ diagram|json_script:"dd" }}
+{% endblock %}
+{% block skript %}
+<script src="{% static 'diagram.js' %}"></script>
+<script>
+const dd = JSON.parse(document.getElementById("dd").textContent);
+stapeldiagram(document.getElementById("manadsdiagram"), { kategorier: dd.kategorier, serier: [
+  { namn: "Budget", farg: "#2a78d6", varden: dd.int_budget, grupp: "b", ihalig: true },
+  { namn: "Utfall", farg: "#2a78d6", varden: dd.int_utfall, grupp: "u" }]});
+const utf = dd.kategorier.map((_, i) => i < dd.ack_utfall.length ? dd.ack_utfall[i] : null);
+linjer(document.getElementById("ackdiagram"), { etiketter: dd.kategorier, serier: [
+  { namn: "Budget", farg: "#9aa3a0", varden: dd.ack_budget },
+  { namn: "Prognos", farg: "#1baf7a", varden: dd.ack_prognos, streckad: true },
+  { namn: "Utfall", farg: "#2a78d6", varden: utf }]});
+</script>
+{% endblock %}

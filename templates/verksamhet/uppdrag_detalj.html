@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>{{ u.namn }} {% if not u.aktiv %}<span class="status">avslutat</span>{% endif %}</h1>
+  <div class="knappar">
+    <a href="{% url 'uppdrag_andra' u.pk %}" role="button" class="outline">Ändra</a>
+    {% if ofakt %}<a href="{% url 'fakturera_tid' %}?kund={{ u.kund.pk }}" role="button">Fakturera {{ ofakt|h }} h</a>{% endif %}
+  </div>
+</div>
+<article>
+  <div class="formgrid">
+    <div><small class="dimmad">Kund</small><br><a href="{% url 'kund_detalj' u.kund.pk %}">{{ u.kund.namn }}</a></div>
+    <div><small class="dimmad">Artikel</small><br>{{ u.artikel|default:"–" }}</div>
+    <div><small class="dimmad">Pris</small><br>{{ u.pris|kr }} kr</div>
+    <div><small class="dimmad">Kundens referens</small><br>{{ u.kundreferens|default:"–" }}</div>
+    <div><small class="dimmad">Period</small><br>{{ u.startdatum|default:"?" }} – {{ u.slutdatum|default:"" }}</div>
+    <div><small class="dimmad">Timmar</small><br>{{ totalt|h|default:"0" }}{% if u.budget_timmar %} av {{ u.budget_timmar|h }} budgeterade{% endif %}</div>
+  </div>
+  {% if u.anteckning %}<p>{{ u.anteckning|linebreaksbr }}</p>{% endif %}
+</article>
+<h2>Tid</h2>
+<table>
+  <thead><tr><th>Datum</th><th class="tal">Timmar</th><th>Beskrivning</th><th>Faktura</th><th></th></tr></thead>
+  <tbody>{% for p in poster %}
+    <tr><td>{{ p.datum }}</td><td class="tal">{{ p.timmar|h }}</td><td>{{ p.beskrivning }}</td>
+      <td>{% if p.fakturarad %}<a href="{{ p.fakturarad.faktura.get_absolute_url }}">{{ p.fakturarad.faktura.nummer|default:"utkast" }}</a>{% elif not p.fakturerbar %}<span class="dimmad">ej fakturerbar</span>{% endif %}</td>
+      <td>{% if not p.fakturerad %}<a href="{% url 'tidpost_andra' p.pk %}">Ändra</a>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="5">Ingen tid rapporterad ännu.</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

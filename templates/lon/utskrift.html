@@ -1,0 +1,48 @@
+{% load kr %}<!doctype html>
+<html lang="sv"><head><meta charset="utf-8"><title>Lönespecifikation {{ k.period }}</title>
+<style>
+  @page { size: A4; margin: 16mm; }
+  body { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 10pt; color: #111; margin: 0; }
+  .spec { max-width: 178mm; margin: 0 auto 10mm; page-break-after: always; }
+  .spec:last-child { page-break-after: auto; }
+  .topp { display: flex; justify-content: space-between; }
+  h1 { font-size: 16pt; margin: 0; } .fore { font-weight: 700; font-size: 13pt; }
+  .info { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; margin: 8mm 0; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; border-bottom: 1.5px solid #111; padding: 1.5mm 1mm; font-size: 9pt; }
+  td { padding: 1.5mm 1mm; border-bottom: .5px solid #ddd; }
+  .tal { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .summa td { font-weight: 700; font-size: 12pt; border-top: 1.5px solid #111; }
+  .liten { font-size: 8.5pt; color: #444; }
+  .verktyg { position: fixed; top: 10px; right: 10px; } @media print { .verktyg { display: none; } }
+</style></head>
+<body>
+<div class="verktyg"><button onclick="window.print()">Skriv ut / spara som PDF</button></div>
+{% for s, b, ack in specar %}
+<div class="spec">
+  <div class="topp"><div class="fore">{{ foretag.namn }}</div><div><h1>Lönespecifikation</h1>Period {{ k.period }}</div></div>
+  <div class="info">
+    <div><b>{{ s.anstalld.namn }}</b><br>{{ s.anstalld.adress }}<br>{{ s.anstalld.postnummer }} {{ s.anstalld.ort }}</div>
+    <table class="liten">
+      <tr><td>Utbetalningsdag</td><td>{{ k.utbetalningsdatum }}</td></tr>
+      <tr><td>Anställningsnr</td><td>{{ s.anstalld.nummer }}</td></tr>
+      <tr><td>Skatt</td><td>{{ s.anstalld.skattetext }}</td></tr>
+      {% if s.anstalld.bankkonto %}<tr><td>Insättning till</td><td>{{ s.anstalld.clearingnummer }} {{ s.anstalld.bankkonto }}</td></tr>{% endif %}
+    </table>
+  </div>
+  <table>
+    <thead><tr><th>Löneart</th><th>Beskrivning</th><th class="tal">Antal</th><th class="tal">À-pris</th><th class="tal">Belopp</th></tr></thead>
+    <tbody>{% for r in s.rader.all %}<tr><td>{{ r.artnamn }}</td><td>{{ r.beskrivning }}</td><td class="tal">{{ r.antal|h }}</td><td class="tal">{{ r.a_pris|kr }}</td><td class="tal">{{ r.belopp|kr }}</td></tr>{% endfor %}
+    <tr><td colspan="4">Skatteavdrag</td><td class="tal">-{{ b.skatt|kr }}</td></tr>
+    {% if b.formaner %}<tr><td colspan="4">Förmåner (betalas inte ut, ingår i skatteunderlaget)</td><td class="tal">-{{ b.formaner|kr }}</td></tr>{% endif %}
+    <tr class="summa"><td colspan="4">Att utbetala</td><td class="tal">{{ b.netto|kr }}</td></tr></tbody>
+  </table>
+  <table class="liten" style="margin-top:6mm">
+    <tr><td>Skatteunderlag denna period</td><td class="tal">{{ b.underlag|kr }}</td><td>Skatteunderlag hittills i år</td><td class="tal">{{ ack.brutto|kr }}</td></tr>
+    <tr><td>Skatteavdrag denna period</td><td class="tal">{{ b.skatt|kr }}</td><td>Skatteavdrag hittills i år</td><td class="tal">{{ ack.skatt|kr }}</td></tr>
+  </table>
+  {% if s.meddelande %}<p>{{ s.meddelande }}</p>{% endif %}
+  <p class="liten">{{ foretag.namn }} · Org.nr {{ foretag.orgnr }}</p>
+</div>
+{% endfor %}
+</body></html>

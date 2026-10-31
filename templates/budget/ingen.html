@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block innehall %}
+<h1>Budgetuppföljning {{ ar|stringformat:"d" }}</h1>
+<article>Det finns ingen budget för {{ ar|stringformat:"d" }}. <a href="{% url 'budget_ny' %}">Skapa en budget</a>.</article>
+{% endblock %}

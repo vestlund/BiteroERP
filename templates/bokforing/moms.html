@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>Moms – {{ namn }}</h1>
+  <form method="get" class="filter">
+    <select name="ar" onchange="this.form.submit()">{% for a in ar_lista %}<option {% if a == ar %}selected{% endif %}>{{ a|stringformat:"d" }}</option>{% endfor %}</select>
+    <select name="typ" onchange="this.form.period.value='';this.form.submit()">
+      <option value="manad" {% if typ == 'manad' %}selected{% endif %}>Månad</option>
+      <option value="kvartal" {% if typ == 'kvartal' %}selected{% endif %}>Kvartal</option>
+      <option value="ar" {% if typ == 'ar' %}selected{% endif %}>Helår</option></select>
+    <select name="period" onchange="this.form.submit()">{% for i, n in perioder %}<option value="{{ i }}" {% if i == vald %}selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+  </form>
+</div>
+<div class="tva-kol">
+<section>
+<table>
+  {% for g in rutor %}{% if g.har_varden %}
+    <tr><th colspan="3" class="grupprubrik">{{ g.rubrik }}</th></tr>
+    {% for r in g.rader %}{% if r.belopp %}
+      <tr><td class="rutnr">{{ r.nr }}</td><td>{{ r.namn }}<br><small class="dimmad">{% for k, b in r.konton.items %}{{ k }}: {{ b|kr }} {% endfor %}</small></td>
+        <td class="tal"><b>{{ r.belopp|kr:0 }}</b></td></tr>
+    {% endif %}{% endfor %}
+  {% endif %}{% endfor %}
+  <tr class="summa"><td class="rutnr">49</td><td>{% if ruta49 >= 0 %}Moms att betala{% else %}Moms att få tillbaka{% endif %}</td><td class="tal">{{ ruta49|kr:0 }}</td></tr>
+</table>
+<p class="hjalp">Rutorna fylls i på momsdeklarationen i Skatteverkets e-tjänst. Belopp i hela kronor. Kontrollera alltid mot Visma, som är huvudbok.</p>
+</section>
+<section>
+<article>
+  <h3 class="liten-rubrik">Avräkning</h3>
+  {% if avrakning %}
+    <p>✓ Perioden är avräknad i <a href="{{ avrakning.get_absolute_url }}">{{ avrakning.vernr }}</a>.</p>
+    <p class="liten-text">När Skatteverket drar eller betalar ut beloppet:
+      <a href="{% url 'verifikation_ny' %}?mall={% if ruta49 >= 0 %}moms_skatt{% else %}moms_tillbaka{% endif %}">bokför mot skattekontot</a>.</p>
+  {% else %}
+    <p class="liten-text">Avräkningen nollställer momskontona för perioden mot 2650 Redovisningskonto för moms.</p>
+    <table class="liten-text">{% for k, s in momskonton.items %}<tr><td>{{ k }}</td><td class="tal">{{ s|kr }}</td></tr>{% endfor %}</table>
+    {% if momskonton %}
+    <form method="post" action="{% url 'moms_avrakna' %}">{% csrf_token %}
+      <input type="hidden" name="fran" value="{{ fran|date:'Y-m-d' }}"><input type="hidden" name="till" value="{{ till|date:'Y-m-d' }}">
+      <input type="hidden" name="nasta" value="{{ request.get_full_path }}">
+      <button onclick="return confirm('Bokföra momsavräkningen per {{ till|date:'Y-m-d' }}?')">Bokför momsavräkning</button></form>
+    {% endif %}
+  {% endif %}
+  {% if deadline %}<p class="liten-text">Deklarera och betala senast cirka <b>{{ deadline }}</b> (kontrollera exakt dag hos Skatteverket).</p>{% endif %}
+</article>
+</section>
+</div>
+{% endblock %}

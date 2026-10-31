@@ -1,0 +1,58 @@
+# Ändringslogg
+
+Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
+fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
+
+## 2026.10.31-3
+
+- **Webbserver:** programmet körs med waitress i stället för Djangos utvecklingsserver. Felsidor med
+  programkod är avstängda, och fel skrivs till `bitero-erp-data\fel.log`. Utvecklingsläge: `BITERO_DEBUG=1`.
+- **Behandlingshistoriken** fångar massuppdateringar med en egen QuerySet på varje modell (`LoggadQuerySet`)
+  i stället för att ändra i Django. Ett test kontrollerar att ingen modell saknar den.
+- **Skydd:** massändring och massradering av verifikationer och transaktioner stoppas också på databasnivå
+  i programmet. Tidigare skyddades bara ändringar av en enskild verifikation.
+- **Formulär:** allt som skickas från bank-, moms-, budget-, tidrapport- och importsidorna valideras med
+  Django-formulär. Svenska tal ("1 234,50") godtas överallt. Felaktiga värden ger ett felmeddelande i stället
+  för att tyst bli 0.
+- **Säkerhet:** "nästa sida"-länkar kan inte längre leda ut ur systemet. Originalfakturor kan visas i
+  fakturasidans ram (`X-Frame-Options: SAMEORIGIN`).
+- 89 automatiska tester.
+
+## 2026.10.31-2
+
+- Koden versionshanteras med git i ett privat GitHub-repo. Varje systemversion visar sin git-commit
+  ("+ändringar" om det fanns ändringar som inte var incheckade).
+- GitHub Actions kör de automatiska testerna vid varje uppladdning.
+- Säkerhetskopiorna sparas i OneDrive (`OneDrive\bitero-erp-backups`), oberoende av var koden ligger.
+- Tre nya tester för var säkerhetskopiorna hamnar (67 totalt).
+- Skriptet `flytta-till-git.bat` hämtar koden från GitHub till `C:\kod\bitero-erp`, utanför OneDrive.
+
+## 2026.10.31
+
+- **Behandlingshistorik:**
+  - alla registreringar, ändringar och raderingar loggas med före- och eftervärden,
+  - bokförda verifikationer loggas med alla rader,
+  - inloggningar och programversioner loggas,
+  - hashkedja med kontroll av att loggen är orörd, och export till CSV.
+- **Automatiska tester:** 64 tester för bokföring, moms, lön, import och export, bank, betalfil, logg och
+  alla sidor. De körs vid start när programmet har uppdaterats, och med `test.bat`.
+- Systemdokumentation och ändringslogg visas under Inställningar.
+- Rättat: ändringar av lösenord syns nu i historiken (utan värdet).
+
+## 2026-10-30 och tidigare (före versionsnumrering)
+
+Systemet byggdes upp i oktober 2026. Funktionerna, i den ordning de kom:
+
+- Register importerade från Visma: kunder, leverantörer, artiklar, kontoplan och kostnadsställen.
+  Uppdrag, tidrapport och kundfakturor.
+- Parallell bokföring:
+  - verifikationer med rättelser och periodlåsning,
+  - automatisk bokföring av kund- och leverantörsfakturor och kvitton med bilagor,
+  - bankimport och avstämning,
+  - moms och skattekonto,
+  - SIE-export till Visma.
+- Ny layout med sidomeny. Lönehantering med arbetsgivaravgifter 2026, skattetabeller och AGI-underlag.
+- Import och export av alla registertyper. Budget och prognos med uppföljning mot tid och fakturor.
+- Automatisk avstämning mot Handelsbanken: camt.053/054, matchningsregler och betalfil pain.001.
+- Import av kund- och leverantörsfakturor och betalningar från Visma (SIE).
+- Koppling av originalfakturor (PDF) till importerade kundfakturor.

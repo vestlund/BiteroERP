@@ -1,0 +1,78 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>Bank</h1>
+  <p class="knappar liten-text">
+    <a href="?visa=att_hantera" {% if visa == 'att_hantera' %}aria-current="page"{% endif %}>Att hantera ({{ antal }})</a>
+    <a href="?visa=auto" {% if visa == 'auto' %}aria-current="page"{% endif %}>Automatiskt avstämda ({{ antal_auto }})</a>
+    <a href="?visa=alla" {% if visa == 'alla' %}aria-current="page"{% endif %}>Alla bankposter</a>
+    <a href="{% url 'register_lista' 'matchningsregler' %}">Matchningsregler</a></p>
+</div>
+<details {% if not sida.object_list and visa == 'att_hantera' or form.errors %}open{% endif %}>
+  <summary>Importera kontoutdrag</summary>
+  <article>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <div class="formgrid">
+      <label>Kontoutdrag (camt.053, camt.054 eller CSV){{ form.fil }}{{ form.fil.errors }}</label>
+      <label>{{ form.konto.label }}{{ form.konto }}</label>
+    </div>
+    <button>Importera</button>
+    <p class="hjalp">Bäst är camt.053 (kontoutdrag i ISO 20022-format), eftersom det innehåller referenser och OCR som gör matchningen säker.
+      CSV från Handelsbanken, SEB, Swedbank, Nordea, Danske m.fl. fungerar också. Poster som redan importerats hoppas över.
+      Efter importen stäms allt säkert av automatiskt.</p>
+  </form>
+  </article>
+</details>
+
+{% if visa == 'att_hantera' and sida.object_list %}
+<form method="post" class="knappar" style="margin-bottom:.8rem">{% csrf_token %}<button name="matcha" value="1" class="outline liten">Kör automatisk avstämning igen</button></form>
+{% endif %}
+{% if visa == 'att_hantera' %}
+  {% for p in sida %}
+  <article class="bankpost">
+    <div class="rubrikrad">
+      <div><b>{{ p.datum }}</b> {{ p.text }}{% if p.referens %} <small class="dimmad">ref {{ p.referens }}</small>{% endif %}</div>
+      <div class="belopp {% if p.belopp < 0 %}ut{% else %}in{% endif %}">{{ p.belopp|kr }} kr</div>
+    </div>
+    <div class="knappar">
+      {% for f in p.forslag %}
+      <form method="post" action="{% url 'bankpost_hantera' p.pk %}">{% csrf_token %}
+        <input type="hidden" name="atgard" value="{{ f.typ }}"><input type="hidden" name="id" value="{{ f.obj.pk }}">
+        <input type="hidden" name="nasta" value="{{ request.get_full_path }}">
+        <button class="liten">✓ {{ f.text|truncatechars:60 }}</button></form>
+      {% endfor %}
+      {% for r in p.regelforslag %}
+      <form method="post" action="{% url 'bankpost_hantera' p.pk %}">{% csrf_token %}
+        <input type="hidden" name="atgard" value="regel"><input type="hidden" name="id" value="{{ r.pk }}">
+        <input type="hidden" name="nasta" value="{{ request.get_full_path }}">
+        <button class="liten">✓ Regel: {{ r.namn }} ({{ r.motkonto_id }})</button></form>
+      {% endfor %}
+      <form method="post" action="{% url 'bankpost_hantera' p.pk %}" class="knappar motkonto">{% csrf_token %}
+        <input type="hidden" name="atgard" value="konto"><input type="hidden" name="nasta" value="{{ request.get_full_path }}">
+        <input name="motkonto" list="kontolista" placeholder="Motkonto, t.ex. 1630" required class="kort" autocomplete="off">
+        <input name="text" value="{{ p.text|truncatechars:80 }}" class="mellan">
+        <button class="liten outline">Bokför</button>
+        <label class="liten-text regelval"><input type="checkbox" name="spara_regel" value="1"> spara som regel för texten
+          <input name="regeltext" value="{{ p.motpart|default:p.text|truncatechars:30 }}" class="kort"></label></form>
+      <form method="post" action="{% url 'bankpost_hantera' p.pk %}">{% csrf_token %}
+        <input type="hidden" name="atgard" value="ignorera"><input type="hidden" name="nasta" value="{{ request.get_full_path }}">
+        <button class="liten secondary outline" title="T.ex. intern överföring som redan bokförts på annat sätt">Ignorera</button></form>
+    </div>
+  </article>
+  {% empty %}
+  <article>✓ Alla bankposter är hanterade.</article>
+  {% endfor %}
+{% else %}
+<table>
+  <thead><tr><th>Datum</th><th>Text</th><th class="tal">Belopp</th><th class="tal">Saldo</th><th>Bokföring</th><th></th></tr></thead>
+  <tbody>{% for p in sida %}
+    <tr><td>{{ p.datum }}</td><td>{{ p.text }}</td><td class="tal">{{ p.belopp|kr }}</td><td class="tal">{{ p.saldo|kr }}</td>
+      <td>{% if p.verifikation %}<a href="{{ p.verifikation.get_absolute_url }}">{{ p.verifikation.vernr }}</a>{% if p.automatisk %} <span class="status betald" title="Automatiskt avstämd">auto</span>{% endif %}{% elif p.ignorerad %}<span class="dimmad">ignorerad</span>{% else %}<span class="status forfallen">ej hanterad</span>{% endif %}</td>
+      <td>{% if p.hanterad %}<form method="post" action="{% url 'bankpost_hantera' p.pk %}">{% csrf_token %}<input type="hidden" name="atgard" value="aterstall"><input type="hidden" name="nasta" value="{{ request.get_full_path }}"><button class="liten secondary outline" title="Kopplar bort posten (verifikationen ligger kvar)">Koppla bort</button></form>{% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% endif %}
+{% include "sidor.html" %}
+<datalist id="kontolista">{% for nr, namn in konton %}<option value="{{ nr }}">{{ nr }} {{ namn }}</option>{% endfor %}</datalist>
+<p class="hjalp">Vanliga motkonton: 1630 skattekonto, 6570 bankavgift, 2893 återbetalt utlägg, 2081/2091 eget kapital, 8310 ränteintäkt.</p>
+{% endblock %}

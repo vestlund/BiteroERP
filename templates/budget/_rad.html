@@ -1,0 +1,17 @@
+{% load kr %}<tr class="budgetrad">
+  <td class="fast">
+    <input type="hidden" name="r-{{ n }}-typ" value="{{ r.typ|default:typ_ny }}"><input type="hidden" name="r-{{ n }}-ordning" value="{{ r.ordning|default:999 }}">
+    {% with t=r.typ|default:typ_ny %}
+    {% if t == "tid" %}<label class="radval"><input type="checkbox" class="markera" checked title="Markera för 'Fyll timmar'"></label>
+      <select name="r-{{ n }}-uppdrag" class="uppdragsval"><option value="">– uppdrag –</option>{% for u in uppdrag %}<option value="{{ u.pk }}" data-pris="{{ u.pris }}" {% if r.uppdrag_id == u.pk %}selected{% endif %}>{{ u }}</option>{% endfor %}</select>{% endif %}
+    <input name="r-{{ n }}-beskrivning" value="{{ r.beskrivning|default:'' }}" placeholder="{% if t == 'kostnad' %}t.ex. Hyra{% elif t == 'intakt' %}t.ex. Nytt uppdrag (ej klart){% else %}Beskrivning{% endif %}">
+    {% endwith %}
+  </td>
+  <td class="smal">{% with t=r.typ|default:typ_ny %}
+    {% if t == "tid" %}<input name="r-{{ n }}-timpris" value="{% if r.timpris is not None %}{{ r.timpris|h }}{% endif %}" placeholder="kr/tim" inputmode="decimal">
+    {% else %}<input name="r-{{ n }}-konto" value="{{ r.konto_id|default:'' }}" list="kontolista" placeholder="konto">{% endif %}{% endwith %}</td>
+  {% if r %}{% for v in r.varden %}<td><input class="m" name="r-{{ n }}-m{{ forloop.counter }}" value="{{ v|h }}" inputmode="decimal"></td>{% endfor %}
+  {% else %}{% for m in "123456789abc" %}<td><input class="m" name="r-{{ n }}-m{{ forloop.counter }}" value="" inputmode="decimal"></td>{% endfor %}{% endif %}
+  <td><input class="radsumma" value="{% if r %}{{ r.summa|kr:0 }}{% endif %}" title="Skriv ett årsbelopp för att fördela det"></td>
+  <td><label title="Ta bort raden"><input type="checkbox" name="r-{{ n }}-radera" value="1"> ✕</label></td>
+</tr>

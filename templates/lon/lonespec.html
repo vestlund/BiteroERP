@@ -1,0 +1,48 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>{{ s.anstalld }} – lön {{ s.korning.period }}</h1>
+  <div class="knappar"><a href="{% url 'lonekorning' s.korning.pk %}">← Lönekörningen</a>
+    <a href="{% url 'lonespec_utskrift' s.korning.pk %}?spec={{ s.pk }}" role="button" class="outline" target="_blank">Lönespec (PDF)</a></div>
+</div>
+<form method="post">{% csrf_token %}
+<div class="tva-kol">
+<article>
+  {{ rader.management_form }}{{ rader.non_form_errors }}
+  <table class="rader">
+    <thead><tr><th style="width:26%">Löneart</th><th>Beskrivning</th><th style="width:11%">Antal</th><th style="width:15%">À-pris</th><th class="tal" style="width:13%">Belopp</th><th>Ta bort</th></tr></thead>
+    <tbody>{% for r in rader %}
+      <tr>{{ r.id }}<td>{{ r.typ }}</td><td>{{ r.beskrivning }}</td><td>{{ r.antal }}</td><td>{{ r.a_pris }}</td>
+        <td class="tal">{% if r.instance.pk %}{{ r.instance.belopp|kr }}{% endif %}</td><td>{% if r.instance.pk %}{{ r.DELETE }}{% endif %}</td></tr>
+      {% if r.errors %}<tr><td colspan="6" class="errorlist">{{ r.errors }}</td></tr>{% endif %}
+    {% endfor %}</tbody>
+  </table>
+  <p class="hjalp">Frånvaro- och karensavdrag anges med negativt à-pris. Förmåner betalas inte ut men ger skatt och arbetsgivaravgift. Traktamente och milersättning upp till de skattefria beloppen läggs till nettot.</p>
+</article>
+<article>
+  <table>
+    <tr><td>Bruttolön</td><td class="tal">{{ b.brutto|kr }}</td></tr>
+    {% if b.formaner %}<tr><td>Förmåner (skattepliktiga)</td><td class="tal">{{ b.formaner|kr }}</td></tr>{% endif %}
+    <tr><td>Underlag för skatt och avgifter</td><td class="tal">{{ b.underlag|kr }}</td></tr>
+    <tr><td>
+      <label>Skatteavdrag ({{ s.anstalld.skattetext }}){{ form.skatteavdrag }}{{ form.skatteavdrag.errors }}</label>
+      {% if not las %}<small class="hjalp">
+        {% if forslag is not None %}Förslag: <b>{{ forslag|kr:0 }} kr</b>{% if s.skatt_manuell %} (du har skrivit in eget belopp){% endif %}.
+        {% elif s.anstalld.skattemetod == 'tabell' %}{% if not har_tabell %}Skattetabellerna är inte importerade ({% url 'skattetabeller' as u %}<a href="{{ u }}">importera</a>). {% endif %}Läs av tabell {{ s.anstalld.skattetabell }}, kolumn {{ s.anstalld.skattekolumn }} för {{ b.underlag|kr:0 }} kr på <a href="https://www.skatteverket.se/foretag/arbetsgivare/arbetsgivaravgifterochskatteavdrag/skattetabeller" target="_blank">skatteverket.se</a>.{% endif %}
+      </small>{% endif %}
+    </td><td></td></tr>
+    {% if b.skattefritt %}<tr><td>Skattefria ersättningar</td><td class="tal">{{ b.skattefritt|kr }}</td></tr>{% endif %}
+    {% if b.netto_poster %}<tr><td>Utlägg / nettoavdrag</td><td class="tal">{{ b.netto_poster|kr }}</td></tr>{% endif %}
+    <tr class="summa"><td>Att betala ut</td><td class="tal">{{ b.netto|kr }} kr</td></tr>
+    <tr><td class="dimmad">Arbetsgivaravgift ({{ b.avgiftsgrupp }})</td><td class="tal dimmad">{{ b.avgift|kr }}</td></tr>
+  </table>
+  <label>Meddelande på lönespecen{{ form.meddelande }}</label>
+  {% if not las %}<div class="knappar">
+    <button>Spara och räkna om</button>
+    <button name="foresla" value="1" class="outline">Räkna fram skatt igen</button>
+    <button name="tillbaka" value="1" class="outline secondary">Spara och tillbaka</button>
+  </div>{% else %}<p class="dimmad">Lönekörningen är bokförd och låst.</p>{% endif %}
+</article>
+</div>
+</form>
+{% endblock %}

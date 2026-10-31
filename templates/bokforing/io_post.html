@@ -1,0 +1,186 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad"><h1>{{ namn }}</h1><a href="{% url 'io_lista' %}">← Import och export</a></div>
+
+{% if steg == "betalningar_ladda" %}
+<div class="tva-kol">
+<article>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <label>SIE-fil från Visma<input type="file" name="fil" accept=".se,.si,.sie,.txt" required></label>
+    <button>Läs in och granska</button></form>
+</article>
+<article class="liten-text">
+  <p>Använd Vismas <i>SIE – export av kundfakturor och inbetalningar</i> för kundbetalningar, eller den fullständiga
+    <i>SIE – export av bokföringsdata</i> för både in- och utbetalningar. Välj gärna bara perioden sedan förra importen.</p>
+  <p>Inbetalningar (1510 mot bankkonto) och utbetalningar (2440 mot bankkonto) kopplas till öppna fakturor här, först på
+    fakturanummer i texten och sedan på belopp och namn. Matchade fakturor markeras som betalda.</p>
+  <p><b>Ingen bokföring skapas</b>, eftersom betalningen redan är bokförd i Visma. Läs in bokföringen via
+    <a href="{% url 'io_post' 'sie' %}">SIE – import av bokföringsdata</a>, så att saldona stämmer även här.</p>
+</article>
+</div>
+
+{% elif steg == "betalningar" %}
+<form method="post">{% csrf_token %}<input type="hidden" name="import" value="{{ nyckel }}">
+<article>
+  <p>{{ res|length }} betalningar hittades: <b>{{ matchade }}</b> kan kopplas till öppna fakturor{% if omatchade %} och {{ omatchade }} hittar ingen öppen faktura{% endif %}.</p>
+  {% if matchade %}<button name="importera" value="1">Markera {{ matchade }} fakturor som betalda</button>{% endif %}
+</article>
+<table class="liten-text">
+  <thead><tr><th>Datum</th><th>Typ</th><th>Visma-text</th><th class="tal">Belopp</th><th>Kopplas till</th><th>Hur</th></tr></thead>
+  <tbody>{% for r in res %}<tr class="{% if not r.faktura %}dimmad{% endif %}">
+    <td>{{ r.datum }}</td><td>{% if r.typ == "kund" %}Inbetalning{% else %}Utbetalning{% endif %}</td>
+    <td>{{ r.text }} <small class="dimmad">({{ r.ver }})</small></td><td class="tal">{{ r.belopp|kr }}</td>
+    <td>{% if r.faktura %}<a href="{{ r.faktura.get_absolute_url }}" target="_blank">{% if r.typ == "kund" %}Faktura {{ r.faktura.nummer }} {{ r.faktura.kund.namn }}{% else %}{{ r.faktura.motpartsnamn }} {{ r.faktura.fakturanummer }}{% endif %}</a>
+      {% else %}<span class="status">ingen öppen faktura</span>{% endif %}</td><td>{{ r.hur }}</td></tr>
+  {% empty %}<tr><td colspan="6">Inga betalningar hittades i filen.</td></tr>{% endfor %}</tbody>
+</table>
+</form>
+
+{% elif steg == "ladda" %}
+<div class="tva-kol">
+<article>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <label>Fil från Visma (SIE, Excel eller CSV)<input type="file" name="fil" accept=".se,.si,.sie,.xlsx,.csv,.txt" required></label>
+    <button>Läs in och granska</button></form>
+  {% if typ == "kund" %}<form method="post" enctype="multipart/form-data" style="margin-top:1.2rem">{% csrf_token %}
+    <label>Koppla fakturornas PDF:er (markera alla, t.ex. Faktura164.pdf … Faktura179.pdf)
+      <input type="file" name="pdfer" accept=".pdf" multiple required></label>
+    <button class="outline">Koppla PDF:er</button>
+    <p class="hjalp">Fakturanumret läses ur PDF:en, och annars ur filnamnet. För Visma-fakturor hämtas också det riktiga förfallodatumet och OCR-numret.
+      När du klickar på en faktura visas sedan originalet.</p></form>{% endif %}
+  {% if importerade %}<form method="post" style="margin-top:1rem">{% csrf_token %}
+    <p class="liten-text">{{ importerade }} fakturor är redan importerade från Visma. Blev en tidigare import fel kan du ta bort dem och importera igen.
+      Det påverkar ingen bokföring.</p>
+    <button name="rensa" value="1" class="secondary outline liten" onclick="return confirm('Ta bort {{ importerade }} importerade Visma-fakturor?')">Ta bort importerade Visma-fakturor</button></form>{% endif %}
+</article>
+<article class="liten-text">
+  <p><b>SIE-fil:</b> {% if typ == "kund" %}använd Vismas <i>SIE – export av kundfakturor och inbetalningar</i> eller den fullständiga SIE-exporten.
+    Fakturor känns igen på konto 1510 och inbetalningar på 1510 mot bankkonto. Fakturanumret hämtas ur verifikationstexten.{% else %}använd Vismas fullständiga
+    <i>SIE – export av bokföringsdata</i>. Leverantörsfakturor känns igen på konto 2440 och betalningar på 2440 mot bankkonto.{% endif %}
+    Betalningar kopplas till fakturorna, så att du ser vilka som fortfarande är obetalda. Förfallodatum räknas fram från betalningsvillkoren eftersom SIE inte innehåller dem.</p>
+  <p><b>Excel/CSV:</b> om du har en lista med fler uppgifter (förfallodatum, OCR) ger den ett ännu bättre resultat. Kolumner som används: {% for k, namn, krav, s in falt %}{{ namn }}{% if krav %}*{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %} (* krävs).</p>
+  <p><b>Ingen bokföring skapas</b>, eftersom fakturorna redan är bokförda i Visma. Läs in bokföringen via SIE. Importen ger dig reskontra, förfallodatum och OCR,
+    så att avstämning och likviditetsprognos fungerar.{% if typ == "kund" %} Nummerserien här fortsätter efter Vismas högsta fakturanummer.{% endif %}
+    Samma fil kan läsas in igen: befintliga fakturor uppdateras med ny status.</p>
+</article>
+</div>
+
+{% elif steg == "mappning" %}
+<form method="post">{% csrf_token %}<input type="hidden" name="import" value="{{ nyckel }}">
+<div class="tva-kol">
+{% if sie %}<article class="liten-text"><h3 class="liten-rubrik">Från SIE-fil</h3>
+  <p>{{ antal }} fakturor hittades i verifikationerna och {{ antal_bet }} betalningar. Kontrollera förhandsgranskningen nedan,
+    särskilt att {% if typ == "kund" %}fakturanummer och kund{% else %}leverantör{% endif %} tolkats rätt ur verifikationstexterna.
+    Verifikationer som ursprungligen skapats i det här systemet hoppas över.</p></article>
+{% else %}<article>
+  <h3 class="liten-rubrik">Kolumner</h3>
+  <table class="liten-text">{% for k, namn, krav, s in falt %}
+    <tr><td>{{ namn }}{% if krav %} *{% endif %}</td><td><select name="m_{{ k }}" onchange="this.form.submit()">
+      <option value="">– används inte –</option>
+      {% for i, r in rubriker %}<option value="{{ i }}" {% if mappning|get:k == i %}selected{% endif %}>{{ r }}</option>{% endfor %}</select></td></tr>
+  {% endfor %}</table>
+</article>{% endif %}
+<article>
+  <h3 class="liten-rubrik">Sammanfattning</h3>
+  {% if saknas %}<p class="meddelande error">Välj kolumn för: {{ saknas|join:", " }}.</p>{% else %}
+  <p>{{ antal }} fakturor kan importeras: {{ antal_betalda }} betalda och {{ antal|add:"0"|sub:antal_betalda|kr:0 }} obetalda (obetalt totalt {{ summa_obetalt|kr }} kr).</p>
+  {% if fel %}<p class="meddelande warning">{{ fel|length }} {% if sie %}verifikationer{% else %}rader{% endif %} kan inte läsas och hoppas över:<br>{% for f in fel|slice:":6" %}{{ f }}<br>{% endfor %}</p>{% endif %}
+  <button name="importera" value="1">Importera {{ antal }} fakturor</button>{% endif %}
+</article>
+</div>
+{% if forhand %}
+<h2>Förhandsgranskning</h2>
+<table class="liten-text">
+  <thead><tr><th>{% if typ == "kund" %}Nr{% else %}Fakturanr{% endif %}</th><th>{% if typ == "kund" %}Kund{% else %}Leverantör{% endif %}</th><th>Datum</th><th>Förfaller</th><th class="tal">Belopp</th><th class="tal">Moms</th><th>Status</th><th>OCR</th></tr></thead>
+  <tbody>{% for p in forhand %}<tr>
+    <td>{% if typ == "kund" %}{{ p.nummer }}{% else %}{{ p.fakturanummer }}{% endif %}</td><td>{% if p.namn %}{{ p.namn }}{% elif typ == "kund" %}{{ p.kundnummer }}{% else %}{{ p.levnummer }}{% endif %}</td>
+    <td>{{ p.fakturadatum }}</td><td>{{ p.forfallodatum|default:"" }}</td><td class="tal">{{ p.belopp|kr }}</td><td class="tal">{{ p.moms|kr }}</td>
+    <td>{% if p.makulerad %}<span class="status makulerad">makulerad</span>{% elif p.betald %}<span class="status betald">betald {{ p.betaldatum|default:"" }}</span>{% else %}<span class="status skickad">obetald</span>{% endif %}</td>
+    <td>{{ p.ocr }}</td></tr>{% endfor %}</tbody>
+</table>{% endif %}
+</form>
+
+{% elif register %}
+<div class="tva-kol">
+  <article><h3 class="liten-rubrik">Exportera</h3>
+    <p class="liten-text">Hela {{ register }} som CSV i Vismas format (samma kolumner som Vismas egen export). Filen kan läsas in i Visma eller öppnas i Excel.</p>
+    <a href="?exportera=1" role="button">Ladda ner CSV</a></article>
+  <article><h3 class="liten-rubrik">Importera</h3>
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+      <input type="file" name="fil" accept=".csv,.txt" required>
+      <button class="outline">Importera</button></form>
+    <p class="liten-text">Exportera {{ register }} från Visma (Inställningar → Import och export) och läs in filen här.
+      Poster matchas på nummer: befintliga uppdateras och nya läggs till. Inget raderas.</p></article>
+</div>
+
+{% elif slug == "foretag" %}
+<article><p>Exportera företagsuppgifterna (namn, org.nr, adress, betaluppgifter med mera).</p>
+  <div class="knappar"><a href="?exportera=1" role="button">CSV</a><a href="?exportera=1&format=json" role="button" class="outline">JSON</a></div></article>
+
+{% elif slug == "betalfil" %}
+<form method="post">{% csrf_token %}
+<article>
+  {% if not foretag_iban %}<p class="meddelande warning">Fyll i företagets IBAN och BIC under <a href="{% url 'foretag' %}">Företagsuppgifter</a>. Det är kontot som betalningarna dras från.</p>{% endif %}
+  <table>
+    <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('[name=faktura]').forEach(c=>c.checked=this.checked)"></th><th>Leverantör</th><th>Fakturanr</th><th>OCR</th><th>Förfaller</th><th>Till</th><th class="tal">Belopp</th></tr></thead>
+    <tbody>{% for lf in obetalda %}
+      <tr><td><input type="checkbox" name="faktura" value="{{ lf.pk }}" {% if lf.leverantor.bankgiro or lf.leverantor.plusgiro %}checked{% else %}disabled{% endif %}></td>
+        <td><a href="{{ lf.get_absolute_url }}">{{ lf.motpartsnamn }}</a></td><td>{{ lf.fakturanummer }}</td><td>{{ lf.ocr }}</td>
+        <td>{{ lf.forfallodatum|default:"" }}{% if lf.forfallen %} <span class="status forfallen">förfallen</span>{% endif %}</td>
+        <td class="liten-text">{% if lf.leverantor.bankgiro %}BG {{ lf.leverantor.bankgiro }}{% elif lf.leverantor.plusgiro %}PG {{ lf.leverantor.plusgiro }}{% else %}<span class="status forfallen">saknar giro</span>{% endif %}</td>
+        <td class="tal">{{ lf.belopp|kr }}</td></tr>
+    {% empty %}<tr><td colspan="7">Inga obetalda leverantörsfakturor.</td></tr>{% endfor %}</tbody>
+  </table>
+  <div class="knappar"><label class="knappar">Betaldag <input type="date" name="datum" value="{{ idag|date:'Y-m-d' }}"></label>
+    <button>Skapa betalfil</button></div>
+  <p class="liten-text">Filen skapas i formatet ISO 20022 (pain.001), som svenska banker tar emot. Det gamla LB-formatet har Bankgirot slutat ta emot.
+    Ladda upp filen i internetbanken under filöverföring/betalfiler och godkänn betalningarna där.
+    Fakturorna markeras som betalda först när betalningen syns på kontoutdraget och du matchar den under Kassa- och bankhändelser.
+    <b>Testa första gången med en enda betalning</b>, eftersom bankerna kan ha egna krav.</p>
+</article>
+</form>
+
+{% elif slug == "sie-kund" %}
+<article>
+  <form method="get" action="{% url 'sie' %}">
+    <input type="hidden" name="serier" value="F"><input type="hidden" name="serier" value="I"><input type="hidden" name="exportera" value="1">
+    <div class="formgrid"><label>Från<input type="date" name="fran" value="{{ fran|date:'Y-m-d' }}"></label>
+      <label>Till<input type="date" name="till" value="{{ till|date:'Y-m-d' }}"></label>
+      <label class="bred"><input type="checkbox" name="endast_nya" checked> Bara sådant som inte exporterats tidigare</label></div>
+    <button>Ladda ner SIE-fil</button>
+  </form>
+  <p class="liten-text">Kundfakturor (serie F) och inbetalningar (serie I) som SIE 4-verifikationer för import i Visma.</p>
+</article>
+
+{% elif slug == "sie" %}
+<div class="tva-kol">
+<article><h3 class="liten-rubrik">Importera från Visma</h3>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <input type="file" name="fil" required>
+    <fieldset><label><input type="radio" name="vad" value="ver" checked> Verifikationer (all bokföring)</label>
+      <label><input type="radio" name="vad" value="ib"> Bara ingående balanser</label></fieldset>
+    <button class="outline">Importera</button></form>
+  <p class="liten-text">Exportera en SIE 4-fil från Visma. Verifikationerna läses in som serie V, så att rapporter, huvudbok,
+    moms och budgetuppföljning blir kompletta. Verifikationer som redan importerats hoppas över, och det gör även
+    sådant som du bokfört här och exporterat till Visma. Därför kan du importera samma fil flera gånger.</p></article>
+<article><h3 class="liten-rubrik">Exportera till Visma</h3>
+  <p class="liten-text">Verifikationer från den här bokföringen som SIE 4.</p>
+  <a href="{% url 'sie' %}" role="button">Till SIE-export</a></article>
+</div>
+
+{% elif slug == "oss" %}
+<article>
+  <form method="get" class="filter"><input type="date" name="fran" value="{{ fran }}"><input type="date" name="till" value="{{ till }}"><button class="outline">Visa</button>
+    <a href="?fran={{ fran }}&till={{ till }}&exportera=1" role="button">Ladda ner CSV</a></form>
+  <table>
+    <thead><tr><th>Land</th><th class="tal">Momssats</th><th class="tal">Beskattningsunderlag</th><th class="tal">Moms</th></tr></thead>
+    <tbody>{% for nyckel, v in oss %}<tr><td>{{ nyckel.0 }}</td><td class="tal">{{ nyckel.1 }} %</td><td class="tal">{{ v.underlag|kr }}</td><td class="tal">{{ v.moms|kr }}</td></tr>
+    {% empty %}<tr><td colspan="4">Ingen försäljning till privatpersoner i andra EU-länder under perioden.</td></tr>{% endfor %}</tbody>
+  </table>
+  <p class="liten-text">One Stop Shop gäller försäljning av tjänster och distansförsäljning av varor till <b>privatpersoner</b> i andra EU-länder.
+    Underlaget bygger på kundfakturor till kunder markerade som privatperson med landkod i EU.
+    Uppgifterna förs in i Skatteverkets e-tjänst för OSS. Jag har inte kunnat bekräfta Skatteverkets exakta filformat
+    för inläsning, så filen är ett underlag och inte en färdig deklarationsfil. Säljer du bara till företag berörs du normalt inte av OSS.</p>
+</article>
+{% endif %}
+{% endblock %}

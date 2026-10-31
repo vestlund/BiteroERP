@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block innehall %}
+<h1>Ny budget</h1>
+<form method="post">{% csrf_token %}
+<article>
+  <div class="formgrid">
+    <label>År<select name="ar">{% for a in ar_val %}<option {% if a == forslag_ar %}selected{% endif %}>{{ a|stringformat:"d" }}</option>{% endfor %}</select></label>
+    <label>Namn<input name="namn" placeholder="t.ex. Budget 2027 eller Prognos resten av 2026"></label>
+    <label class="bred"><input type="checkbox" name="huvudbudget" checked> Huvudbudget för året (visas på översikten)</label>
+  </div>
+  <fieldset>
+    <legend><b>Starta från</b></legend>
+    <label><input type="radio" name="kalla" value="forslag" checked> Förslag: aktiva uppdrag × arbetsdagar och kostnader enligt de senaste 12 månaderna</label>
+    <div class="formgrid" style="margin-left:1.8rem">
+      <label>Beläggning %<input name="belaggning" value="90" inputmode="decimal"></label>
+      <label>Timmar per arbetsdag<input name="timmar" value="8" inputmode="decimal"></label>
+    </div>
+    {% for b in budgetar %}<label><input type="radio" name="kalla" value="{{ b.pk }}"> Kopiera {{ b }}</label>{% endfor %}
+    <label><input type="radio" name="kalla" value=""> Tom budget</label>
+  </fieldset>
+  <p class="hjalp">För innevarande år fylls bara månaderna från och med {{ idag|date:"F" }} i. Tidigare månader följs upp mot faktiskt utfall.</p>
+  <button>Skapa</button>
+</article>
+</form>
+{% endblock %}

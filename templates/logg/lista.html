@@ -1,0 +1,60 @@
+{% extends "base.html" %}{% load kr %}
+{% block titel %}Behandlingshistorik{% endblock %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>Behandlingshistorik</h1>
+  <div class="knappar">
+    <a href="?{% for k, v in g.items %}{% if k != 'kontrollera' and k != 'sida' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}kontrollera=1" role="button" class="outline">Kontrollera att loggen är orörd</a>
+    <a href="{% url 'logg_csv' %}?{{ request.GET.urlencode }}" role="button" class="outline">Exportera CSV</a>
+  </div>
+</div>
+<p class="dimmad">Alla registreringar, ändringar och raderingar i systemet, med vem och när. Varje händelse är kedjad
+  till den förra med en kontrollsumma, så att ändringar i efterhand går att upptäcka. {{ totalt }} händelser totalt.</p>
+
+{% if kontroll %}
+  {% if kontroll.ok %}<p class="meddelande success">✓ Kedjan är hel: alla {{ kontroll.antal }} händelser är orörda.</p>
+  {% else %}<div class="meddelande error"><strong>Loggen har ändrats utanför systemet.</strong>
+    <ul>{% for id, orsak in kontroll.fel %}<li><a href="{% url 'logg_handelse' id %}">Händelse {{ id }}</a>: {{ orsak }}</li>{% endfor %}</ul></div>{% endif %}
+{% endif %}
+
+<form method="get" class="filter">
+  <select name="modell" onchange="this.form.submit()"><option value="">Alla typer</option>
+    {% for m, n in modeller %}<option value="{{ m }}" {% if g.modell == m %}selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+  <select name="handling" onchange="this.form.submit()"><option value="">Alla händelser</option>
+    {% for k, n in handlingar %}<option value="{{ k }}" {% if g.handling == k %}selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+  <select name="anvandare" onchange="this.form.submit()"><option value="">Alla användare</option>
+    {% for a in anvandare_lista %}<option {% if g.anvandare == a %}selected{% endif %}>{{ a }}</option>{% endfor %}</select>
+  <input type="date" name="fran" value="{{ g.fran }}" title="Från">
+  <input type="date" name="till" value="{{ g.till }}" title="Till">
+  <input type="search" name="q" value="{{ g.q }}" placeholder="Sök objekt eller värde">
+  {% if g.objekt %}<input type="hidden" name="objekt" value="{{ g.objekt }}">{% endif %}
+  <button class="outline">Filtrera</button>
+</form>
+
+<table>
+  <thead><tr><th>Tid</th><th>Användare</th><th>Händelse</th><th>Typ</th><th>Objekt</th><th>Vad</th></tr></thead>
+  <tbody>{% for h in sida %}
+    <tr>
+      <td class="liten-text ingen-radbrytning"><a href="{% url 'logg_handelse' h.pk %}">{{ h.tid|date:"Y-m-d H:i:s" }}</a></td>
+      <td>{{ h.anvandare }}</td>
+      <td><span class="status {{ h.handling }}">{{ h.get_handling_display }}</span></td>
+      <td class="liten-text">{{ namn|get:h.modell }}</td>
+      <td>{{ h.objekt|truncatechars:60 }}</td>
+      <td class="liten-text">{% if h.handling == 'andrad' %}{% for k, v in h.andringar.items %}{{ k }}{% if not forloop.last %}, {% endif %}{% endfor %}{% elif h.handling == 'bokford' %}{{ h.andringar.rader|length }} rader{% elif h.handling == 'inloggning' %}{{ h.andringar.resultat }}{% endif %}</td>
+    </tr>
+  {% empty %}<tr><td colspan="6">Inga händelser.</td></tr>{% endfor %}</tbody>
+</table>
+{% include "sidor.html" %}
+
+<h2>Systemversioner</h2>
+<p class="dimmad">Varje gång programmet startar med ändrade programfiler registreras en ny version, med vilka filer som ändrats.
+  Se även <a href="{% url 'systemdokumentation' %}">systemdokumentationen</a>.</p>
+<table>
+  <thead><tr><th>Startad första gången</th><th>Version</th><th>Git</th><th class="tal">Ändrade filer</th><th>Fingeravtryck</th></tr></thead>
+  <tbody>{% for sv in systemversioner %}
+    <tr><td><a href="{% url 'logg_systemversion' sv.pk %}">{{ sv.tid|date:"Y-m-d H:i" }}</a></td><td>{{ sv.version }}</td><td class="liten-text"><code>{{ sv.git|default:"–" }}</code></td>
+      <td class="tal">{% if forloop.last and not sv.andrade and not sv.borttagna %}första{% else %}{{ sv.antal_andringar }}{% endif %}</td>
+      <td class="liten-text"><code>{{ sv.fingeravtryck|slice:":16" }}…</code></td></tr>
+  {% empty %}<tr><td colspan="5">Registreras vid nästa start.</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

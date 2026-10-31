@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block innehall %}
+<h1>Sök: {{ q }}</h1>
+<table class="klickbar">{% for typ, text, url in traffar %}
+  <tr onclick="location.href='{{ url }}'"><td style="width:150px"><span class="status">{{ typ }}</span></td><td><a href="{{ url }}">{{ text }}</a></td></tr>
+{% empty %}<tr><td>Inga träffar.</td></tr>{% endfor %}</table>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titel %}Händelse {{ h.pk }}{% endblock %}
+{% block innehall %}
+<p><a href="{% url 'logg' %}">← Behandlingshistorik</a></p>
+<h1>{{ h.get_handling_display }}: {{ h.objekt|default:modellnamn }}</h1>
+<p class="dimmad">{{ modellnamn }}</p>
+<table class="nyckelvarden">
+  <tr><th>Tid</th><td>{{ h.tid|date:"Y-m-d H:i:s" }}</td></tr>
+  <tr><th>Användare</th><td>{{ h.anvandare|default:"–" }}</td></tr>
+  <tr><th>Källa</th><td><code>{{ h.kalla }}</code></td></tr>
+  <tr><th>Typ och id</th><td>{{ h.modell }} {{ h.objekt_id }}
+    {% if h.objekt_id %} · <a href="{% url 'logg' %}?modell={{ h.modell|urlencode }}&objekt={{ h.objekt_id|urlencode }}">all historik för objektet</a>{% endif %}</td></tr>
+  <tr><th>Kontrollsumma</th><td><code class="liten-text">{{ h.hash }}</code> {% if ok_hash %}✓{% else %}<strong>✗ innehållet stämmer inte med summan</strong>{% endif %}</td></tr>
+  <tr><th>Föregående</th><td><code class="liten-text">{{ h.foregaende|default:"(första händelsen)" }}</code></td></tr>
+</table>
+
+{% if h.handling == 'bokford' %}
+  <h2>Verifikation {{ h.andringar.vernr }} {{ h.andringar.datum }}</h2>
+  <p>{{ h.andringar.text }}{% if h.andringar.rattar %} (rättar {{ h.andringar.rattar }}){% endif %}</p>
+  <table><thead><tr><th>Konto</th><th class="tal">Belopp</th><th>Text</th></tr></thead>
+    <tbody>{% for r in h.andringar.rader %}<tr><td>{{ r.0 }}</td><td class="tal">{{ r.1 }}</td><td>{{ r.2 }}</td></tr>{% endfor %}</tbody></table>
+{% elif diff %}
+  <table><thead><tr><th>Fält</th><th>Före</th><th>Efter</th></tr></thead>
+    <tbody>{% for falt, v in andringar %}<tr><td>{{ falt }}</td><td class="dimmad">{{ v.0 }}</td><td>{{ v.1 }}</td></tr>{% endfor %}</tbody></table>
+{% else %}
+  <table><thead><tr><th>Fält</th><th>Värde</th></tr></thead>
+    <tbody>{% for falt, v in andringar %}<tr><td>{{ falt }}</td><td>{{ v }}</td></tr>{% endfor %}</tbody></table>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block innehall %}
+<h1>Ny lönekörning</h1>
+<article><form method="post">{% csrf_token %}
+  <div class="formgrid">
+    <label>Löneperiod{{ form.period }}{{ form.period.errors }}</label>
+    <label>Utbetalningsdatum{{ form.utbetalningsdatum }}{{ form.utbetalningsdatum.errors }}</label>
+    <label class="bred">Anteckning{{ form.anteckning }}</label>
+    <div class="bred"><b>Anställda</b>{{ form.anstallda }}{{ form.anstallda.errors }}</div>
+  </div>
+  <p class="hjalp">Varje anställd får månads- eller timlön enligt sitt register. Förmåner följer med från förra lönen. Skatteavdraget räknas fram om skattetabellerna är importerade.</p>
+  <button>Skapa lönekörning</button>
+</form></article>
+{% endblock %}

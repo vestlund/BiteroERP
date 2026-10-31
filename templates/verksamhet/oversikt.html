@@ -1,0 +1,139 @@
+{% extends "base.html" %}{% load kr static %}
+{% block innehall %}
+<div class="rubrikrad"><h1>Översikt</h1>
+  <div class="knappar"><a href="{% url 'tidrapport' %}" role="button" class="outline">Rapportera tid</a>
+    <a href="{% url 'fakturera_tid' %}" role="button">Fakturera tid</a></div></div>
+
+<div class="dash">
+  <section class="kort">
+    <div class="kort-delad">
+      <div>
+        <div class="kort-rubrik"><h2>Kund- och leverantörsfakturor</h2></div>
+        <div class="kort-under">{{ ar|stringformat:"d" }}-01-01 – {{ ar|stringformat:"d" }}-12-31 · per fakturadatum, inkl. moms</div>
+        <div id="fakturadiagram"></div>
+        <div class="forklaring">
+          <span><i style="background:#2a78d6"></i>Betalda kundfakturor</span>
+          <span><i class="ram" style="border-color:#2a78d6"></i>Obetalda kundfakturor</span>
+          <span><i style="background:#eb6834"></i>Betalda leverantörsfakturor</span>
+          <span><i class="ram" style="border-color:#eb6834"></i>Obetalda leverantörsfakturor</span>
+        </div>
+      </div>
+      <div class="sida">
+        <h3>Kundfakturor</h3>
+        <div class="nyckeltal-rad">
+          <div class="nyckeltal"><div class="etikett">Förfallna, {{ kund_status.forf_antal }} st</div>
+            <div class="belopp {% if kund_status.forf_antal %}varning{% endif %}">{{ kund_status.forf|kr }}</div></div>
+        </div>
+        <div class="nyckeltal"><div class="etikett">Ej förfallna, {{ kund_status.ej_antal }} st</div><div class="belopp">{{ kund_status.ej|kr }}</div></div>
+        <h3 style="margin-top:1.2rem">Leverantörsfakturor</h3>
+        <div class="nyckeltal"><div class="etikett">Förfallna, {{ lev_status.forf_antal }} st</div>
+          <div class="belopp {% if lev_status.forf_antal %}varning{% endif %}">{{ lev_status.forf|kr }}</div></div>
+        <div class="nyckeltal"><div class="etikett">Ej förfallna, {{ lev_status.ej_antal }} st</div><div class="belopp">{{ lev_status.ej|kr }}</div></div>
+      </div>
+    </div>
+  </section>
+  <section class="kort">
+    <div class="kort-rubrik"><h2>Att göra</h2></div>
+    <div class="kort-under">Det som väntar på dig just nu</div>
+    <ul class="attgora-lista">
+      {% for farg, ikon, rubrik, under, url in attgora %}
+      <li><span class="ikon {{ farg }}">{{ ikon }}</span><div><a href="{% url url %}">{{ rubrik }}</a><small>{{ under }}</small></div></li>
+      {% empty %}<li><span class="ikon gron">✓</span><div>Allt är gjort.<small>Inga öppna ärenden.</small></div></li>{% endfor %}
+    </ul>
+  </section>
+</div>
+
+<div class="dash">
+  <section class="kort">
+    <div class="kort-delad">
+      <div>
+        <div class="kort-rubrik"><h2>Likviditetsprognos</h2></div>
+        <div class="kort-under">{{ prognos.0.etikett }}–{{ prognos.11.etikett }} · företagskontot plus obetalda kund- och leverantörsfakturor, moms och lönskatter på förfallodag</div>
+        <div id="prognosdiagram"></div>
+      </div>
+      <div class="sida">
+        <h3>Företagskonto</h3>
+        {% if senaste_bank %}<div class="nyckeltal"><div class="etikett">Enligt bank {{ senaste_bank.datum }}</div><div class="belopp">{{ senaste_bank.saldo|kr }}</div></div>{% endif %}
+        <div class="nyckeltal"><div class="etikett">Bokfört saldo (1930)</div><div class="belopp">{{ bank_bokfort|kr }}</div></div>
+        <h3 style="margin-top:1.2rem">Skattekonto</h3>
+        <div class="nyckeltal"><div class="etikett">Bokfört saldo (1630)</div><div class="belopp">{{ skattekonto|kr }}</div></div>
+        <a href="{% url 'bank' %}" class="liten-text">→ Kassa- och bankhändelser</a>
+      </div>
+    </div>
+  </section>
+  <section class="kort">
+    <div class="kort-rubrik"><h2>Intäkter, kostnader och resultat</h2></div>
+    <div class="kort-under">{{ ar|stringformat:"d" }}-01-01 – {{ idag|date:"Y-m-d" }}</div>
+    <div id="resultatdiagram"></div>
+    <table class="liten-text" style="margin-top:.8rem">
+      <tr><td>Intäkter</td><td class="tal"><b>{{ intakter|kr }}</b></td></tr>
+      <tr><td>Kostnader</td><td class="tal"><b>{{ kostnader|neg|kr }}</b></td></tr>
+      <tr class="summa"><td>Resultat</td><td class="tal">{{ resultat|kr }}</td></tr>
+    </table>
+  </section>
+</div>
+
+{% if budgetinfo %}
+<section class="kort" style="margin-bottom:1rem">
+  <div class="kort-delad">
+    <div>
+      <div class="kort-rubrik"><h2>Budget mot utfall</h2><a href="{{ budgetinfo.budget.get_absolute_url }}" class="liten-text">Visa uppföljning →</a></div>
+      <div class="kort-under">{{ budgetinfo.budget.namn }} · ackumulerade intäkter</div>
+      <div id="budgetdiagram"></div>
+      <div class="forklaring"><span><i style="background:#9aa3a0"></i>Budget</span><span><i style="background:#2a78d6"></i>Utfall</span><span><i style="background:#1baf7a"></i>Prognos (streckad)</span></div>
+    </div>
+    <div class="sida">
+      {% if budgetinfo.s.takt is not None %}<div class="nyckeltal"><div class="etikett">Takt hittills i år</div>
+        <div class="belopp {% if budgetinfo.s.takt < 95 %}varning{% else %}bra{% endif %}">{{ budgetinfo.s.takt|kr:0 }} %</div></div>{% endif %}
+      <div class="nyckeltal"><div class="etikett">Prognos intäkter helår</div><div class="belopp">{{ budgetinfo.s.prognos_intakter|kr:0 }}</div></div>
+      <div class="nyckeltal"><div class="etikett">Budget intäkter helår</div><div class="belopp">{{ budgetinfo.s.budget_intakter|kr:0 }}</div></div>
+      <div class="nyckeltal"><div class="etikett">Prognos resultat helår</div><div class="belopp">{{ budgetinfo.s.prognos_resultat|kr:0 }}</div></div>
+    </div>
+  </div>
+</section>
+{{ budgetinfo.ack|json_script:"bd" }}
+{% endif %}
+
+<section class="kort">
+  <div class="kort-rubrik"><h2>Uppdrag och tid</h2>
+    <span class="liten-text">{{ timmar_manad|h|default:"0" }} timmar denna månad · {{ ofakt_belopp|kr:0 }} kr ofakturerat</span></div>
+  {% if uppdrag %}
+  <table>
+    <thead><tr><th>Uppdrag</th><th>Kund</th><th class="tal">Pris</th><th class="tal">Timmar totalt</th><th class="tal">Ofakturerat</th><th></th></tr></thead>
+    <tbody>{% for u in uppdrag %}
+      <tr><td><a href="{{ u.get_absolute_url }}">{{ u.namn }}</a></td><td>{{ u.kund.namn }}</td><td class="tal">{{ u.pris|kr:0 }}</td>
+        <td class="tal">{{ u.totalt|h|default:"0" }}{% if u.budget_timmar %} / {{ u.budget_timmar|h }}{% endif %}</td>
+        <td class="tal">{{ u.ofakt|h|default:"–" }}</td>
+        <td class="tal">{% if u.ofakt %}<a href="{% url 'fakturera_tid' %}?kund={{ u.kund.pk }}">Fakturera</a>{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table>
+  {% else %}<p>Inga aktiva uppdrag. <a href="{% url 'uppdrag_nytt' %}">Lägg upp ett uppdrag</a>.</p>{% endif %}
+</section>
+{{ fakturadiagram|json_script:"fd" }}{{ prognos|json_script:"pd" }}{{ resultatdiagram|json_script:"rd" }}
+{% endblock %}
+{% block skript %}
+<script src="{% static 'diagram.js' %}"></script>
+<script>
+const fd = JSON.parse(document.getElementById("fd").textContent);
+stapeldiagram(document.getElementById("fakturadiagram"), { kategorier: fd.kategorier, serier: [
+  { namn: "Betalda kundfakturor", farg: "#2a78d6", varden: fd.kund.betald, grupp: "kund" },
+  { namn: "Obetalda kundfakturor", farg: "#2a78d6", varden: fd.kund.obetald, grupp: "kund", ihalig: true },
+  { namn: "Betalda leverantörsfakturor", farg: "#eb6834", varden: fd.lev.betald, grupp: "lev" },
+  { namn: "Obetalda leverantörsfakturor", farg: "#eb6834", varden: fd.lev.obetald, grupp: "lev", ihalig: true },
+]});
+linjediagram(document.getElementById("prognosdiagram"), { punkter: JSON.parse(document.getElementById("pd").textContent) });
+const rd = JSON.parse(document.getElementById("rd").textContent);
+const bdEl = document.getElementById("bd");
+if (bdEl) { const bd = JSON.parse(bdEl.textContent), M = fd.kategorier;
+  linjer(document.getElementById("budgetdiagram"), { etiketter: M, hojd: 230, serier: [
+    { namn: "Budget", farg: "#9aa3a0", varden: bd.budget },
+    { namn: "Prognos", farg: "#1baf7a", varden: bd.prognos, streckad: true },
+    { namn: "Utfall", farg: "#2a78d6", varden: M.map((_, i) => i < bd.utfall.length ? bd.utfall[i] : null) }]}); }
+stapeldiagram(document.getElementById("resultatdiagram"), { kategorier: ["Intäkter", "Kostnader", "Resultat"], hojd: 230,
+  serier: [
+    { namn: "Intäkter", farg: "#2a78d6", varden: [rd.intakter, 0, 0], grupp: "x" },
+    { namn: "Kostnader", farg: "#eb6834", varden: [0, rd.kostnader, 0], grupp: "x" },
+    { namn: "Resultat", farg: "#1baf7a", varden: [0, 0, rd.resultat], grupp: "x" },
+  ] });
+</script>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% load static %}<!doctype html>
+<html lang="sv" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titel %}{{ foretag.namn|default:"Bitero ERP" }}{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'vendor/pico.min.css' %}">
+  <link rel="stylesheet" href="{% static 'app.css' %}">
+  <link rel="stylesheet" href="{% static 'layout.css' %}">
+  <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+{% with p=request.path %}
+<aside class="sidomeny" id="sidomeny">
+  <a href="{% url 'oversikt' %}" class="varumarke"><span class="logo">{{ foretag.namn|default:"B"|slice:":1" }}</span>{{ foretag.namn|default:"Bitero ERP" }}</a>
+  <nav>
+    <a href="{% url 'oversikt' %}" class="huvudlank {% if p == '/' %}aktiv{% endif %}">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Översikt</a>
+
+    <details {% if '/fakturor/' in p or '/tid/' in p or '/uppdrag/' in p or '/kunder/' in p or 'register/kunder' in p or 'register/artiklar' in p %}open{% endif %}>
+      <summary><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>Försäljning</summary>
+      <a href="{% url 'faktura_lista' %}" class="{% if '/fakturor/' in p and 'fakturera-tid' not in p %}aktiv{% endif %}">Kundfakturor</a>
+      <a href="{% url 'fakturera_tid' %}" class="{% if 'fakturera-tid' in p %}aktiv{% endif %}">Fakturera tid</a>
+      <a href="{% url 'tidrapport' %}" class="{% if '/tid/' in p %}aktiv{% endif %}">Tidrapport</a>
+      <a href="{% url 'uppdrag_lista' %}" class="{% if '/uppdrag/' in p %}aktiv{% endif %}">Uppdrag</a>
+      <a href="{% url 'kund_lista' %}" class="{% if '/kunder/' in p or 'register/kunder' in p %}aktiv{% endif %}">Kunder</a>
+      <a href="{% url 'register_lista' 'artiklar' %}" class="{% if 'register/artiklar' in p %}aktiv{% endif %}">Artiklar</a>
+    </details>
+
+    <details {% if '/inkop/' in p or 'register/leverantorer' in p %}open{% endif %}>
+      <summary><svg viewBox="0 0 24 24"><path d="M4 7h16l-1.5 11a2 2 0 0 1-2 1.7H7.5a2 2 0 0 1-2-1.7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>Inköp</summary>
+      <a href="{% url 'levfakturor' %}" class="{% if p == '/inkop/' %}aktiv{% endif %}">Leverantörsfakturor</a>
+      <a href="{% url 'levfaktura_ny' %}?typ=kvitto" class="{% if '/inkop/ny' in p %}aktiv{% endif %}">Registrera kvitto</a>
+      <a href="{% url 'register_lista' 'leverantorer' %}" class="{% if 'register/leverantorer' in p %}aktiv{% endif %}">Leverantörer</a>
+    </details>
+
+    <details {% if '/lon/' in p %}open{% endif %}>
+      <summary><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 20a6.5 6.5 0 0 0-3-5.5"/></svg>Lön</summary>
+      <a href="{% url 'lonekorningar' %}" class="{% if '/lon/korningar' in p or '/lon/spec' in p %}aktiv{% endif %}">Lönekörningar</a>
+      <a href="{% url 'anstallda' %}" class="{% if '/lon/anstallda' in p %}aktiv{% endif %}">Anställda</a>
+      <a href="{% url 'agi' %}" class="{% if '/lon/agi' in p %}aktiv{% endif %}">Arbetsgivardeklaration</a>
+    </details>
+
+    <details {% if '/budget/' in p %}open{% endif %}>
+      <summary><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Budget och prognos</summary>
+      <a href="{% url 'budget_aktuell' %}" class="{% if p == '/budget/' or '/budget/' in p and '/redigera' not in p and 'budgetar' not in p and '/ny/' not in p %}aktiv{% endif %}">Uppföljning</a>
+      <a href="{% url 'budgetar' %}" class="{% if 'budgetar' in p or '/redigera' in p or '/budget/ny' in p %}aktiv{% endif %}">Budgetar</a>
+    </details>
+
+    <a href="{% url 'bank' %}" class="huvudlank {% if '/bank/' in p %}aktiv{% endif %}">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-5 9 5"/><path d="M5 9v9M10 9v9M14 9v9M19 9v9M3 20h18"/></svg>Kassa- och bankhändelser
+      {% if bank_att_hantera %}<span class="bricka">{{ bank_att_hantera }}</span>{% endif %}</a>
+
+    <details {% if '/bokforing/' in p or 'register/konton' in p %}open{% endif %}>
+      <summary><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Bokföring</summary>
+      <a href="{% url 'bokforing' %}" class="{% if p == '/bokforing/' %}aktiv{% endif %}">Bokföringsöversikt</a>
+      <a href="{% url 'verifikationer' %}" class="{% if '/verifikationer/' in p and '/ny/' not in p %}aktiv{% endif %}">Verifikationer</a>
+      <a href="{% url 'verifikation_ny' %}" class="{% if '/verifikationer/ny/' in p %}aktiv{% endif %}">Ny verifikation</a>
+      <a href="{% url 'moms' %}" class="{% if '/moms/' in p %}aktiv{% endif %}">Momsrapport</a>
+      <a href="{% url 'rapporter' %}" class="{% if '/rapporter/' in p %}aktiv{% endif %}">Resultat och balans</a>
+      <a href="{% url 'huvudbok' %}" class="{% if '/huvudbok/' in p %}aktiv{% endif %}">Huvudbok</a>
+      <a href="{% url 'register_lista' 'konton' %}" class="{% if 'register/konton' in p %}aktiv{% endif %}">Kontoplan</a>
+      <a href="{% url 'sie' %}" class="{% if '/sie/' in p %}aktiv{% endif %}">Visma (SIE)</a>
+    </details>
+
+    <details {% if '/register/foretag' in p or 'betalningsvillkor' in p or 'kostnadsstallen' in p or 'skattetabeller' in p or 'import-export' in p or 'matchningsregler' in p or 'behandlingshistorik' in p or 'systemdokumentation' in p or 'systemversion' in p %}open{% endif %}>
+      <summary><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>Inställningar</summary>
+      <a href="{% url 'foretag' %}" class="{% if '/register/foretag' in p %}aktiv{% endif %}">Företagsuppgifter</a>
+      <a href="{% url 'register_lista' 'betalningsvillkor' %}" class="{% if 'betalningsvillkor' in p %}aktiv{% endif %}">Betalningsvillkor</a>
+      <a href="{% url 'register_lista' 'kostnadsstallen' %}" class="{% if 'kostnadsstallen' in p %}aktiv{% endif %}">Kostnadsställen</a>
+      <a href="{% url 'skattetabeller' %}" class="{% if 'skattetabeller' in p %}aktiv{% endif %}">Skattetabeller</a>
+      <a href="{% url 'register_lista' 'matchningsregler' %}" class="{% if 'matchningsregler' in p %}aktiv{% endif %}">Matchningsregler</a>
+      <a href="{% url 'io_lista' %}" class="{% if 'import-export' in p %}aktiv{% endif %}">Import och export</a>
+      <a href="{% url 'logg' %}" class="{% if 'behandlingshistorik' in p or 'systemversion' in p %}aktiv{% endif %}">Behandlingshistorik</a>
+      <a href="{% url 'systemdokumentation' %}" class="{% if 'systemdokumentation' in p %}aktiv{% endif %}">Systemdokumentation</a>
+      <a href="{% url 'admin:auth_user_changelist' %}">Användare och lösenord</a>
+    </details>
+  </nav>
+</aside>
+
+<div class="huvudyta">
+  <header class="toppfalt">
+    <button class="menyknapp" onclick="document.body.classList.toggle('meny-oppen')" aria-label="Meny">☰</button>
+    <form action="{% url 'sok' %}" class="toppsok"><input type="search" name="q" placeholder="Sök kund, faktura, verifikation …" value="{{ request.GET.q|default:'' }}" accesskey="k"></form>
+    <div class="topp-hoger">
+      <details class="dropdown skapa-ny">
+        <summary role="button" class="outline">+ Skapa ny</summary>
+        <ul>
+          <li><a href="{% url 'fakturera_tid' %}">Kundfaktura från tid</a></li>
+          <li><a href="{% url 'faktura_ny' %}">Kundfaktura (manuell)</a></li>
+          <li><a href="{% url 'levfaktura_ny' %}">Leverantörsfaktura</a></li>
+          <li><a href="{% url 'levfaktura_ny' %}?typ=kvitto">Kvitto</a></li>
+          <li><a href="{% url 'tidrapport' %}">Tidrapport</a></li>
+          <li><a href="{% url 'lonekorning_ny' %}">Lönekörning</a></li>
+          <li><a href="{% url 'verifikation_ny' %}">Verifikation</a></li>
+          <li><a href="{% url 'uppdrag_nytt' %}">Uppdrag</a></li>
+          <li><a href="{% url 'budget_ny' %}">Budget</a></li>
+          <li><a href="{% url 'register_ny' 'kunder' %}">Kund</a></li>
+          <li><a href="{% url 'register_ny' 'leverantorer' %}">Leverantör</a></li>
+        </ul>
+      </details>
+      <details class="dropdown anvandare">
+        <summary><span class="namn">{{ request.user.get_full_name|default:request.user.get_username }}</span><span class="dimmad">{{ foretag.namn }}</span></summary>
+        <ul>
+          <li><a href="{% url 'foretag' %}">Företagsuppgifter</a></li>
+          <li><a href="{% url 'admin:password_change' %}">Byt lösenord</a></li>
+          <li><form method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button class="lank">Logga ut</button></form></li>
+        </ul>
+      </details>
+    </div>
+  </header>
+  <main>
+    {% for m in messages %}<p class="meddelande {{ m.tags }}">{{ m }}</p>{% endfor %}
+    {% block innehall %}{% endblock %}
+  </main>
+</div>
+{% endwith %}
+{% block skript %}{% endblock %}
+</body>
+</html>

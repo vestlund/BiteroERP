@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>Lön {{ k.period }} <span class="status {% if k.last %}betald{% else %}utkast{% endif %}">{{ k.get_status_display }}</span></h1>
+  <div class="knappar">
+    <a href="{% url 'lonespec_utskrift' k.pk %}" role="button" class="outline" target="_blank">Lönespecar (PDF)</a>
+    {% if k.last %}
+      <a href="{% url 'agi' %}?period={{ k.utbetalningsdatum|date:'Y-m' }}" role="button" class="outline">Arbetsgivardeklaration</a>
+      <form method="post" action="{% url 'lonekorning_atgard' k.pk 'las_upp' %}">{% csrf_token %}
+        <button class="secondary outline" onclick="return confirm('Rätta bokföringen och låsa upp lönekörningen?')">Lås upp och ändra</button></form>
+    {% else %}
+      <form method="post" action="{% url 'lonekorning_atgard' k.pk 'bokfor' %}">{% csrf_token %}
+        <button onclick="return confirm('Bokföra lönerna och låsa lönekörningen?')">Bokför och lås</button></form>
+      {% if not vers %}<form method="post" action="{% url 'lonekorning_atgard' k.pk 'radera' %}">{% csrf_token %}
+        <button class="secondary outline" onclick="return confirm('Radera lönekörningen?')">Radera</button></form>{% endif %}
+    {% endif %}
+  </div>
+</div>
+<div class="kpi">
+  <article><div class="etikett">Bruttolön</div><div class="varde">{{ sum.brutto|kr:0 }}</div></article>
+  <article><div class="etikett">Skatteavdrag</div><div class="varde">{{ sum.skatt|kr:0 }}</div></article>
+  <article><div class="etikett">Att betala ut</div><div class="varde">{{ sum.netto|kr:0 }}</div><div class="under">{{ k.utbetalningsdatum }}</div></article>
+  <article><div class="etikett">Arbetsgivaravgifter</div><div class="varde">{{ sum.avgift|kr:0 }}</div></article>
+  <article><div class="etikett">Total lönekostnad</div><div class="varde">{{ sum.kostnad|kr:0 }}</div></article>
+</div>
+{% if saknar_skatt and not k.last %}<p class="meddelande warning">Skatteavdrag saknas för {% for s in saknar_skatt %}<a href="{{ s.get_absolute_url }}">{{ s.anstalld }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
+<table class="klickbar">
+  <thead><tr><th>Anställd</th><th class="tal">Brutto</th><th class="tal">Förmåner</th><th class="tal">Skatt</th><th class="tal">Skattefritt/utlägg</th><th class="tal">Netto</th><th class="tal">Arb.giv.avg.</th></tr></thead>
+  <tbody>{% for s, b in specar %}
+    <tr onclick="location.href='{{ s.get_absolute_url }}'"><td><a href="{{ s.get_absolute_url }}">{{ s.anstalld }}</a></td>
+      <td class="tal">{{ b.brutto|kr }}</td><td class="tal">{{ b.formaner|kr }}</td><td class="tal">{{ b.skatt|kr }}</td>
+      <td class="tal">{{ b.skattefritt|add:b.netto_poster|kr }}</td><td class="tal"><b>{{ b.netto|kr }}</b></td><td class="tal">{{ b.avgift|kr }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% if vers %}<p class="liten-text">Bokföring: {% for v in vers %}<a href="{{ v.get_absolute_url }}">{{ v.vernr }}</a> {% endfor %}</p>{% endif %}
+{% endblock %}

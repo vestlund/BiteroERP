@@ -1,0 +1,16 @@
+name: Tester
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tester:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Kör de automatiska testerna
+        env:
+          BITERO_DATA_DIR: ${{ runner.temp }}/bitero-erp-data
+        run: uv run python manage.py test tester

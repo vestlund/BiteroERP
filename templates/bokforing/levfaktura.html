@@ -1,0 +1,43 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>{{ lf.get_typ_display }}: {{ lf.motpartsnamn }} <span class="status {{ lf.status }}">{% if lf.status == 'forfallen' %}förfallen{% else %}{{ lf.status }}{% endif %}</span></h1>
+  <div class="knappar">
+    {% if not lf.betald and lf.typ == 'faktura' %}
+    <form method="post" action="{% url 'levfaktura_betala' lf.pk %}" class="knappar">{% csrf_token %}{{ betala.datum }}<button>Markera betald</button></form>
+    {% endif %}
+    {% if lf.fran_visma %}<span class="status">Importerad från Visma – bokförd där</span>{% endif %}
+    {% if lf.bokford %}<form method="post" action="{% url 'levfaktura_makulera' lf.pk %}">{% csrf_token %}
+      <button class="secondary outline" onclick="return confirm('Rätta (vänd) all bokföring för den här fakturan?')">Makulera/rätta</button></form>{% endif %}
+  </div>
+</div>
+<div class="tva-kol">
+<article>
+  <div class="formgrid">
+    <div><small class="dimmad">Datum</small><br>{{ lf.fakturadatum }}</div>
+    {% if lf.typ == 'faktura' %}<div><small class="dimmad">Förfaller</small><br>{{ lf.forfallodatum|default:"–" }}</div>
+    <div><small class="dimmad">Fakturanummer</small><br>{{ lf.fakturanummer|default:"–" }}</div>
+    <div><small class="dimmad">OCR</small><br>{{ lf.ocr|default:"–" }}</div>{% endif %}
+    <div><small class="dimmad">Belopp</small><br><b>{{ lf.belopp|kr }} kr</b></div>
+    <div><small class="dimmad">Varav moms</small><br>{{ lf.moms|kr }}</div>
+    <div><small class="dimmad">Konto</small><br>{{ lf.konto }}</div>
+    <div><small class="dimmad">Betald</small><br>{{ lf.betaldatum|default:"Nej" }}</div>
+    {% if lf.leverantor.bankgiro %}<div><small class="dimmad">Bankgiro</small><br>{{ lf.leverantor.bankgiro }}</div>{% endif %}
+    {% if lf.leverantor.plusgiro %}<div><small class="dimmad">Plusgiro</small><br>{{ lf.leverantor.plusgiro }}</div>{% endif %}
+    {% if lf.beskrivning %}<div class="bred"><small class="dimmad">Beskrivning</small><br>{{ lf.beskrivning }}</div>{% endif %}
+  </div>
+  <h3 class="liten-rubrik">Bokföring</h3>
+  <table class="liten-text">{% for v in vers %}
+    <tr><td><a href="{{ v.get_absolute_url }}">{{ v.vernr }}</a></td><td>{{ v.datum }}</td><td>{{ v.text }}</td>
+      <td>{% for t in v.transaktioner.all %}{{ t.konto_id }} {% if t.debet %}D {{ t.debet|kr }}{% else %}K {{ t.kredit|kr }}{% endif %}<br>{% endfor %}</td></tr>
+  {% endfor %}</table>
+  <form method="post" enctype="multipart/form-data" class="knappar">{% csrf_token %}
+    <input type="file" name="bilaga" accept=".pdf,image/*" required><button class="outline">Lägg till bilaga</button></form>
+</article>
+<article class="forhand">
+  {% for b in bilagor %}{% if b.ar_bild %}<img src="{% url 'bilaga' b.pk %}" alt="">{% else %}<iframe src="{% url 'bilaga' b.pk %}"></iframe>{% endif %}
+  <p class="liten-text"><a href="{% url 'bilaga' b.pk %}?ladda=1">Ladda ner {{ b.namn }}</a></p>
+  {% empty %}<p class="dimmad">Ingen bilaga.</p>{% endfor %}
+</article>
+</div>
+{% endblock %}

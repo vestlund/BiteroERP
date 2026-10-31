@@ -1,0 +1,111 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>{% if faktura.nummer %}Faktura {{ faktura.nummer }}{% else %}Fakturautkast{% endif %} – {{ faktura.kund.namn }}
+    <span class="status {{ faktura.status }}">{{ faktura.get_status_display }}</span>
+    {% if faktura.forfallen %}<span class="status forfallen">förfallen</span>{% endif %}</h1>
+  <div class="knappar">
+    <a href="{% url 'faktura_utskrift' faktura.pk %}" role="button" class="outline" target="_blank">Visa / skriv ut PDF</a>
+    {% if faktura.status == "utkast" %}
+      <form method="post" action="{% url 'faktura_atgard' faktura.pk 'slutfor' %}">{% csrf_token %}
+        <button onclick="return confirm('Slutför fakturan? Den får nummer och låses.')">Slutför och ge nummer</button></form>
+      <form method="post" action="{% url 'faktura_atgard' faktura.pk 'radera' %}">{% csrf_token %}
+        <button class="secondary outline" onclick="return confirm('Radera utkastet? Tiden blir ofakturerad igen.')">Radera utkast</button></form>
+    {% elif faktura.status == "skickad" %}
+      <form method="post" action="{% url 'faktura_atgard' faktura.pk 'betald' %}" class="knappar">{% csrf_token %}
+        {{ betald_form.betaldatum }}<button>Markera betald</button></form>
+      <form method="post" action="{% url 'faktura_atgard' faktura.pk 'makulera' %}">{% csrf_token %}
+        <button class="secondary outline" onclick="return confirm('Makulera fakturan? Tiden blir ofakturerad igen. Numret återanvänds inte.')">Makulera</button></form>
+    {% elif faktura.status == "betald" %}
+      <span>Betald {{ faktura.betaldatum }}</span>
+      <form method="post" action="{% url 'faktura_atgard' faktura.pk 'obetald' %}">{% csrf_token %}
+        <button class="secondary outline liten">Ångra betald</button></form>
+    {% endif %}
+  </div>
+</div>
+
+{% with original=faktura.bilagor.all|first %}
+{% if original %}
+<article class="forhand">
+  <div class="rubrikrad"><h3 class="liten-rubrik">Originalfaktura</h3>
+    <a href="{% url 'bilaga' original.pk %}?ladda=1" class="liten-text">Ladda ner {{ original.namn }}</a></div>
+  <iframe src="{% url 'bilaga' original.pk %}" style="min-height:900px"></iframe>
+</article>
+{% elif faktura.fran_visma %}
+<article class="liten-text">
+  <form method="post" enctype="multipart/form-data" class="knappar">{% csrf_token %}
+    Ingen originalfaktura kopplad. <input type="file" name="original" accept=".pdf" required><button class="outline liten">Koppla PDF</button></form>
+</article>
+{% endif %}
+{% endwith %}
+{% if not faktura.last %}
+<form method="post">{% csrf_token %}
+<article>
+  {{ huvud.non_field_errors }}
+  <div class="formgrid">
+    {% for f in huvud %}<label class="{% if f.name == 'meddelande' %}bred{% endif %}">{{ f.label }}{{ f }}
+      {% if f.help_text %}<small class="hjalp">{{ f.help_text }}</small>{% endif %}{{ f.errors }}</label>{% endfor %}
+  </div>
+</article>
+<article>
+  {{ rader.management_form }}{{ rader.non_form_errors }}
+  <table class="rader">
+    <thead><tr><th>Artikel</th><th>Beskrivning</th><th>Antal</th><th>Enhet</th><th>À-pris</th><th>Moms %</th><th>Konto</th><th>Ta bort</th></tr></thead>
+    <tbody>{% for r in rader %}
+      <tr>{{ r.id }}
+        <td style="width:14%">{{ r.artikel }}</td><td>{{ r.beskrivning }}{{ r.beskrivning.errors }}</td>
+        <td style="width:7%">{{ r.antal }}</td><td style="width:6%">{{ r.enhet }}</td><td style="width:9%">{{ r.a_pris }}</td>
+        <td style="width:6%">{{ r.momssats }}</td><td style="width:16%">{{ r.konto }}</td>
+        <td style="width:4%">{% if r.instance.pk %}{{ r.DELETE }}{% endif %}</td>
+      </tr>
+    {% endfor %}</tbody>
+  </table>
+  <p class="hjalp">Välj artikel så fylls text, pris, moms och konto i. Spara för att få en ny tom rad.</p>
+  <button type="submit">Spara</button>
+</article>
+</form>
+{% else %}
+<article>
+  <div class="formgrid">
+    <div><small class="dimmad">Fakturadatum</small><br>{{ faktura.fakturadatum }}</div>
+    <div><small class="dimmad">Förfallodatum</small><br>{{ faktura.forfallodatum }}</div>
+    <div><small class="dimmad">Er referens</small><br>{{ faktura.er_referens|default:"–" }}</div>
+    <div><small class="dimmad">Vår referens</small><br>{{ faktura.var_referens|default:"–" }}</div>
+    <div><small class="dimmad">Period</small><br>{{ faktura.period|default:"–" }}</div>
+    <div><small class="dimmad">Bokföring</small><br>{% for v in faktura.verifikationer.all %}<a href="{{ v.get_absolute_url }}">{{ v.vernr }}</a> {% empty %}{% if faktura.fran_visma %}<span class="status">Från Visma – bokförd där</span>{% else %}
+      <form method="post" action="{% url 'faktura_atgard' faktura.pk 'bokfor' %}" class="inline">{% csrf_token %}<button class="liten">Bokför fakturan</button></form>{% endif %}{% endfor %}</div>
+  </div>
+</article>
+<table>
+  <thead><tr><th>Beskrivning</th><th class="tal">Antal</th><th>Enhet</th><th class="tal">À-pris</th><th class="tal">Moms</th><th>Konto</th><th class="tal">Belopp</th></tr></thead>
+  <tbody>{% for r in faktura.rader.all %}
+    <tr><td>{{ r.beskrivning }}</td><td class="tal">{{ r.antal|h }}</td><td>{{ r.enhet }}</td><td class="tal">{{ r.a_pris|kr }}</td>
+      <td class="tal">{{ r.momssats|h }} %</td><td>{{ r.konto_id|default:"" }}</td><td class="tal">{{ r.belopp|kr }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% endif %}
+
+<article style="max-width: 420px; margin-left: auto">
+  <table>
+    <tr><td>Netto</td><td class="tal">{{ sum.netto|kr }}</td></tr>
+    {% for sats, m in sum.moms.items %}<tr><td>Moms {{ sats|h|default:"0" }} % på {{ m.underlag|kr }}</td><td class="tal">{{ m.moms|kr }}</td></tr>{% endfor %}
+    {% if sum.oresavrundning %}<tr><td>Öresavrundning</td><td class="tal">{{ sum.oresavrundning|kr }}</td></tr>{% endif %}
+    <tr class="summa"><td>Att betala</td><td class="tal">{{ sum.att_betala|kr }} kr</td></tr>
+  </table>
+</article>
+{{ artiklar_json|json_script:"artiklar" }}
+{% endblock %}
+
+{% block skript %}
+<script>
+const artiklar = JSON.parse(document.getElementById("artiklar").textContent);
+document.querySelectorAll("select.artikelval").forEach(sel => sel.addEventListener("change", () => {
+  const a = artiklar[sel.value]; if (!a) return;
+  const pre = sel.name.replace(/-artikel$/, "-");
+  const s = (n, v) => { const el = document.querySelector(`[name="${pre}${n}"]`); if (el && v != null) el.value = v; };
+  const besk = document.querySelector(`[name="${pre}beskrivning"]`);
+  if (besk && !besk.value) besk.value = a.namn;
+  s("a_pris", a.pris); s("enhet", a.enhet); s("momssats", a.moms); s("konto", a.konto);
+}));
+</script>
+{% endblock %}

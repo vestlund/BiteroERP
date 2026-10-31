@@ -1,0 +1,5 @@
+{% if bilagor %}<div class="bilagor">{% for b in bilagor %}
+  <a href="{% url 'bilaga' b.pk %}" target="_blank" class="bilaga">
+    {% if b.ar_bild %}<img src="{% url 'bilaga' b.pk %}" alt="">{% else %}<span class="pdf">PDF</span>{% endif %}
+    <span>{{ b.namn|truncatechars:28 }}</span></a>
+{% endfor %}</div>{% else %}<p class="dimmad">Ingen bilaga.</p>{% endif %}

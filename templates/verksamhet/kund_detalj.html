@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% load kr %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>{{ kund.namn }}</h1>
+  <div class="knappar">
+    <a href="{% url 'register_andra' 'kunder' kund.pk %}" role="button" class="outline">Ändra kunduppgifter</a>
+    <a href="{% url 'uppdrag_nytt' %}?kund={{ kund.pk }}" role="button" class="outline">Nytt uppdrag</a>
+    <a href="{% url 'fakturera_tid' %}?kund={{ kund.pk }}" role="button">Fakturera tid</a>
+  </div>
+</div>
+<article>
+  <div class="formgrid">
+    <div><small class="dimmad">Kundnummer</small><br>{{ kund.nummer }}</div>
+    <div><small class="dimmad">Org.nr</small><br>{{ kund.orgnr }}</div>
+    <div><small class="dimmad">Fakturaadress</small><br>{{ kund.adress1 }}{% if kund.adress2 %}<br>{{ kund.adress2 }}{% endif %}<br>{{ kund.postadress }}</div>
+    <div><small class="dimmad">Kontakt</small><br>{{ kund.kontaktperson|default:"–" }}<br>{{ kund.kontakt_epost }}</div>
+    <div><small class="dimmad">Telefon / e-post</small><br>{{ kund.telefon }}<br>{{ kund.epost }}</div>
+    <div><small class="dimmad">Betalningsvillkor</small><br>{{ kund.betalningsvillkor|default:"–" }}</div>
+  </div>
+</article>
+<h2>Uppdrag</h2>
+<table><tbody>{% for u in uppdrag %}
+  <tr><td><a href="{{ u.get_absolute_url }}">{{ u.namn }}</a></td><td>{{ u.pris|kr:0 }} kr</td><td>{% if u.aktiv %}aktivt{% else %}<span class="dimmad">avslutat</span>{% endif %}</td></tr>
+{% empty %}<tr><td>Inga uppdrag.</td></tr>{% endfor %}</tbody></table>
+<h2>Fakturor</h2>
+<table>
+  <thead><tr><th>Nr</th><th>Datum</th><th>Status</th><th class="tal">Att betala</th></tr></thead>
+  <tbody>{% for f in fakturor %}
+  <tr><td><a href="{{ f.get_absolute_url }}">{{ f.nummer|default:"utkast" }}</a></td><td>{{ f.fakturadatum }}</td>
+    <td><span class="status {{ f.status }}">{{ f.get_status_display }}</span></td><td class="tal">{{ f.summering.att_betala|kr }}</td></tr>
+  {% empty %}<tr><td colspan="4">Inga fakturor.</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}
