@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "lon",
     "budget",
     "logg",
+    "planering",
 ]
 
 MIDDLEWARE = [

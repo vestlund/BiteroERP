@@ -1,0 +1,40 @@
+{% extends "base.html" %}{% load kr static %}
+{% block titel %}Likviditetsprognos{% endblock %}
+{% block innehall %}
+<div class="rubrikrad"><h1>Likviditetsprognos</h1>
+  <form method="get" class="filter"><select name="veckor" onchange="this.form.submit()">
+    <option value="8" {% if veckor == 8 %}selected{% endif %}>8 veckor</option>
+    <option value="13" {% if veckor == 13 %}selected{% endif %}>13 veckor</option>
+    <option value="26" {% if veckor == 26 %}selected{% endif %}>26 veckor</option>
+    <option value="52" {% if veckor == 52 %}selected{% endif %}>52 veckor</option></select></form></div>
+
+<div class="dash">
+  <section class="kort">
+    <div id="likviditetsdiagram"></div>
+  </section>
+  <section class="kort">
+    <div class="nyckeltal"><div class="etikett">Startsaldo företagskonto ({{ lp.kalla }})</div><div class="belopp">{{ lp.start|kr }}</div></div>
+    {% if lp.lagsta %}<div class="nyckeltal"><div class="etikett">Lägsta saldo, vecka {{ lp.lagsta.vecka }}</div>
+      <div class="belopp {% if lp.lagsta.saldo < 0 %}negativ{% endif %}">{{ lp.lagsta.saldo|kr }}</div></div>{% endif %}
+    {% with sista=lp.veckor|last %}<div class="nyckeltal"><div class="etikett">Saldo vecka {{ sista.vecka }}</div><div class="belopp">{{ sista.saldo|kr }}</div></div>{% endwith %}
+    <p class="liten-text">Antaganden: förfallna kundfakturor betalas den här veckan, ofakturerad tid faktureras vid månadsskiftet,
+      budgeterade intäkter faktureras vid varje månads slut med 30 dagars betalning, löner {% if lp.lon %}{{ lp.lon.kalla }} (netto {{ lp.lon.netto|kr:0 }} kr den {{ lp.lon.dag }}:e, skatt och avgifter {{ lp.lon.skatter|kr:0 }} kr){% else %}saknas{% endif %}, {% if lp.fskatt %}F-skatt som senaste debiteringen ({{ lp.fskatt|kr:0 }} kr){% else %}ingen F-skatt (hittades inte på konto 2518){% endif %} och 25 % moms på prognosfakturor.
+      Budgeterade kostnader räknas utan personal och skatter, som ingår separat.</p>
+  </section>
+</div>
+
+<table>
+  <thead><tr><th>Vecka</th><th>Datum</th><th class="tal">In</th><th class="tal">Ut</th><th class="tal">Saldo</th><th>Vad</th></tr></thead>
+  <tbody>{% for v in lp.veckor %}
+    <tr><td>v{{ v.vecka }}</td><td class="liten-text ingen-radbrytning">{{ v.fran|date:"j/n" }}–{{ v.till|date:"j/n" }}</td>
+      <td class="tal">{% if v.in %}{{ v.in|kr:0 }}{% endif %}</td><td class="tal">{% if v.ut %}{{ v.ut|kr:0 }}{% endif %}</td>
+      <td class="tal {% if v.saldo < 0 %}negativ{% endif %}"><b>{{ v.saldo|kr:0 }}</b></td>
+      <td class="liten-text">{% for x in v.poster %}<div>{{ x.datum|date:"j/n" }} {{ x.kategori }}: {{ x.text }} <b>{{ x.belopp|kr:0 }}</b></div>{% endfor %}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{{ diagram|json_script:"ld" }}
+{% endblock %}
+{% block skript %}
+<script src="{% static 'diagram.js' %}"></script>
+<script>linjediagram(document.getElementById("likviditetsdiagram"), { punkter: JSON.parse(document.getElementById("ld").textContent), hojd: 280 });</script>
+{% endblock %}

@@ -6,6 +6,7 @@ from bokforing import views as b
 from budget import views as bu
 from logg import views as lg
 from lon import views as l
+from planering import views as pl
 from register import views as r
 from verksamhet import views as v
 
@@ -17,6 +18,10 @@ def kund_lista(request):
 urlpatterns = [
     path("", v.oversikt, name="oversikt"),
     path("sok/", v.sok, name="sok"),
+    # planering
+    path("planering/likviditet/", pl.likviditetssida, name="likviditet"),
+    path("planering/viktiga-datum/", pl.fristsida, name="frister"),
+    path("planering/viktiga-datum/frister.ics", pl.frister_ics, name="frister_ics"),
     # budget
     path("budget/", bu.uppfoljning, name="budget_aktuell"),
     path("budget/budgetar/", bu.lista, name="budgetar"),

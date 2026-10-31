@@ -1,7 +1,6 @@
 """Data till startsidans översikt."""
 
 import datetime as dt
-from collections import defaultdict
 from decimal import Decimal
 
 from django.shortcuts import render
@@ -60,45 +59,12 @@ def oversikt(request):
     resultat = intakter - kostnader
     senaste_bank = Bankpost.objects.filter(konto_id=1930, saldo__isnull=False).order_by("-datum", "-id").first()
 
-    # --- likviditetsprognos per vecka (12 veckor)
-    vecka0 = idag - dt.timedelta(days=idag.weekday())
-    veckor = [vecka0 + dt.timedelta(weeks=i) for i in range(12)]
-    flode = defaultdict(lambda: defaultdict(Decimal))
-
-    def vecka_for(d):
-        if not d or d < vecka0:
-            return 0
-        i = (d - vecka0).days // 7
-        return i if i < 12 else None
-
-    for f, belopp in kund_obetalda:
-        i = vecka_for(f.forfallodatum)
-        if i is not None:
-            flode[i]["Kundfakturor"] += belopp
-    for lf in lev_obetalda:
-        i = vecka_for(lf.forfallodatum)
-        if i is not None:
-            flode[i]["Leverantörsfakturor"] -= lf.belopp
-    # Skatter: personalskatt + arbetsgivaravgifter betalas den 12:e nästa månad
-    lonskuld = -(ub(2710) + ub(2730))
-    if lonskuld > 0:
-        m = idag.month + 1
-        i = vecka_for(dt.date(ar + (m > 12), (m - 1) % 12 + 1, 12))
-        if i is not None:
-            flode[i]["Skatt och avgifter (lön)"] -= lonskuld
-    momsskuld = -sum((ub(k) for k in s_ar if 2600 <= k < 2700), Decimal(0))
-    if momsskuld > 0:
-        till = _momsperiod_slut(idag, foretag.momsperiod)
-        m = till.month + 2
-        i = vecka_for(dt.date(till.year + (m > 12), (m - 1) % 12 + 1, 12))
-        if i is not None:
-            flode[i]["Moms"] -= momsskuld
-    saldo = ub(1930)
-    prognos = []
-    for i, v in enumerate(veckor):
-        saldo += sum(flode[i].values(), Decimal(0))
-        detalj = "".join(f"<div>{namn}: {_f(b):,.0f} kr</div>".replace(",", " ") for namn, b in flode[i].items() if b)
-        prognos.append({"etikett": f"v{v.isocalendar()[1]}", "varde": _f(saldo), "detalj": detalj})
+    # --- likviditetsprognos per vecka (12 veckor), se planering/likviditet.py
+    from planering import likviditet
+    lp = likviditet.prognos(idag, veckor=12)
+    prognos = [{"etikett": f"v{v['vecka']}", "varde": _f(v["saldo"]),
+                "detalj": "".join(f"<div>{k}: {_f(b):,.0f} kr</div>".replace(",", " ")
+                                  for k, b in v["kategorier"].items() if b)} for v in lp["veckor"]]
 
     # --- att göra
     attgora = []
@@ -158,16 +124,3 @@ def oversikt(request):
         "uppdrag": uppdrag,
         "resultatdiagram": {"intakter": _f(intakter), "kostnader": _f(kostnader), "resultat": _f(resultat)},
     })
-
-
-def _momsperiod_slut(d, typ):
-    if typ == "manad":
-        m = d.month - 1 or 12
-        y = d.year if d.month > 1 else d.year - 1
-    elif typ == "kvartal":
-        q_slut = ((d.month - 1) // 3) * 3  # sista månaden i förra kvartalet
-        m, y = (q_slut, d.year) if q_slut else (12, d.year - 1)
-    else:
-        return dt.date(d.year - 1, 12, 31)
-    nasta = dt.date(y + (m == 12), m % 12 + 1, 1)
-    return nasta - dt.timedelta(days=1)

@@ -149,6 +149,18 @@ Allt annat hanteras manuellt. Bankposter känns igen med en kontrollsumma, så s
 Betalfilen följer ISO 20022 pain.001.001.03: bankgiro via SESBA 9900/BGNR, plusgiro via SESBA 9960/BBAN.
 OCR skickas som strukturerad referens när kontrollsiffran stämmer.
 
+### Planering
+- **Likviditetsprognos** (Planering → Likviditet): saldot på företagskontot vecka för vecka.
+  - Startsaldot är bankens senaste saldo från importerade kontoutdrag, annars bokfört saldo på 1930.
+  - In: kundfakturor på förfallodagen, ofakturerad tid som faktureras vid månadens slut och budgeterade intäkter.
+  - Ut: leverantörsfakturor, nettolöner, skatter och avgifter samt F-skatt på skattedagarna, moms på momsdagen
+    och budgeterade kostnader.
+  - Löner tas från den senaste lönekörningen eller uppskattas från den senast bokförda lönen.
+  - Momsen räknas på momsrapporten per period, inte på kontosaldon.
+- **Viktiga datum** (Planering → Viktiga datum): deklarations- och betalningsdagar enligt Skatteverket för företag
+  med omsättning upp till 40 miljoner kr (den 12:e, i januari och augusti den 17:e, flyttat till närmaste vardag),
+  samt årsstämma, årsredovisning och inkomstdeklaration. Listan kan hämtas som kalenderfil (.ics).
+
 ## 5. Verifieringskedjor
 
 Varje affärshändelse kan följas från underlag till rapport och tillbaka.
