@@ -40,6 +40,7 @@ Så bokför du ett kvitto eller en leverantörsfaktura:
 - Manuella verifikationer: `ny_verifikation` (serie A) för t.ex. skattekontots händelser, med underlag om det
   finns. Kontrollera att debet = kredit och förklara konteringen innan du bokför.
 - Fel: `ratta_verifikation` vänder en felaktig verifikation. Bokför sedan det rätta.
+- Lön eller utdelning: `lon_eller_utdelning` räknar fram bästa fördelningen. Det är ett beslutsunderlag.
 - Läsa: `visa_verifikation`, `huvudbok`, `resultat_och_balans`, `likviditet`, `viktiga_datum`, `ekonomi`.
 
 Det här gör användaren själv i Bitero ERP, inte du: bokföra lön, momsavräkning, bokslut, låsa perioder,
@@ -236,6 +237,18 @@ def likviditet(veckor: int = 13) -> dict:
 def viktiga_datum(dagar: int = 90) -> list:
     """Kommande deklarationer och betalningar (moms, arbetsgivardeklaration, skatt, bokslut)."""
     return a.viktiga_datum(dagar)
+
+
+@server.tool(annotations=LAS, structured_output=False)
+@_som_claude
+def lon_eller_utdelning(resultat_fore_lon: str = "", max_uttag: str = "", max_inkl_avgifter: bool = False,
+                        min_lon: str = "0", fritt_eget_kapital: str = "0", bara_inom_gransbelopp: bool = False) -> dict:
+    """Räkna ut fördelningen mellan lön och utdelning som ger mest netto (3:12-reglerna, 2026).
+
+    Utan resultat används prognosen från bokföringen och budgeten. Utan max_uttag används det sparade maxbeloppet.
+    """
+    return a.lon_eller_utdelning(resultat_fore_lon or None, max_uttag or None, max_inkl_avgifter, min_lon,
+                                 fritt_eget_kapital, bara_inom_gransbelopp)
 
 
 @server.tool(annotations=SKRIV, structured_output=False)

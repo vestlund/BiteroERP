@@ -200,6 +200,23 @@ bara bokföras en gång.
   - Fritt eget kapital beräknas från nästa års ingående balanser. Beräkningen är ett planeringsstöd och
     ersätter inte K10.
 
+- **Lön eller utdelning** (Lön → Lön eller utdelning, `planering/lon_utdelning.py`): räknar fram den lön
+  som ger störst nettobelopp till ägaren av lön plus utdelning, givet ett prognostiserat resultat före ägarens lön.
+  - Modell: samma lön varje år. Lönen kostar lön × (1 + arbetsgivaravgift). Resten beskattas med 20,6 %
+    bolagsskatt och kan delas ut året efter, tillsammans med eventuellt fritt eget kapital från tidigare år.
+  - Gränsbeloppet räknas som ovan med lönen som löneunderlag. Utdelning inom gränsbeloppet beskattas med 20 %,
+    över gränsbeloppet som tjänst (utan arbetsgivaravgift, jobbskatteavdrag och pensionsrätt) upp till
+    90 inkomstbasbelopp och därefter med 30 %.
+  - Inkomstskatt enligt Skatteverkets tekniska beskrivning SKV 433 för 2026: grundavdrag, jobbskatteavdrag,
+    kommunalskatt, statlig skatt 20 % över skiktgränsen 643 000 kr, skattereduktion för förvärvsinkomst,
+    allmän pensionsavgift 7 % med motsvarande skattereduktion, samt begravnings- och kyrkoavgift.
+  - Villkor: max uttag (lön + utdelning, valfritt inklusive arbetsgivaravgifter), lägsta lön och att bara
+    ta utdelning inom gränsbeloppet. Lönen provas i steg om 1 000 kr plus brytpunkter (statlig skatt,
+    8 inkomstbasbelopp, pensionstak). Vid lika netto väljs lägst uttag.
+  - Förenklingar: under 66 år, inga andra inkomster, inget räntebaserat utrymme, ingen tjänstepension.
+    Kommunalskatt, avgift och maxbelopp sparas under Företagsuppgifter. Skatteparametrar finns per år i
+    `PARAMETRAR`; saknas ett år används det senast kända och ska uppdateras när Skatteverket publicerar nya belopp.
+
 - **Uppdragsuppföljning** (Försäljning → Uppdragsuppföljning):
   - Beläggning är fakturerbara timmar mot arbetsdagar × 8 timmar per månad.
   - Intäkt per kund är fakturerat exklusive moms.

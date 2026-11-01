@@ -3,6 +3,14 @@
 Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
 fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
 
+## 2026.11.01-2
+
+- **Lön eller utdelning** (Lön → Lön eller utdelning): räknar fram fördelningen mellan lön och utdelning som
+  ger störst nettobelopp enligt 3:12-reglerna och 2026 års inkomstskatt, med valfritt maxbelopp för lön +
+  utdelning, lägsta lön och fritt eget kapital. Jämförelsetabell och diagram.
+- Nya företagsuppgifter: kommunalskatt, begravnings- och kyrkoavgift och maxbelopp för uttag.
+- Claude kan räkna på samma sak med verktyget `lon_eller_utdelning`.
+
 ## 2026.11.01-1
 
 - **Claude-kopplingen utökad** med tid (rapportera tid, ofakturerad tid), fakturautkast av tid,

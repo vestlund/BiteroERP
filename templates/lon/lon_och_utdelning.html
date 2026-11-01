@@ -1,0 +1,111 @@
+{% extends "base.html" %}{% load kr %}
+{% block titel %}Lön eller utdelning{% endblock %}
+{% block innehall %}
+<div class="rubrikrad">
+  <h1>Lön eller utdelning</h1>
+</div>
+<p class="liten-text">Räknar fram hur mycket du ska ta i lön och i utdelning för att få ut så mycket som möjligt efter skatt,
+  enligt 3:12-reglerna från 2026. Lönen tas ut under året och årets vinst delas ut året efter. Kalkylen förutsätter att
+  du tar samma lön varje år.</p>
+
+{% if r and r.bast %}{% with b=r.bast %}
+<div class="kpi">
+  <article><div class="etikett">Lön per år</div><div class="varde">{{ b.lon|kr:0 }}</div><div class="under">{{ b.lon_manad|kr:0 }} kr/mån</div></article>
+  <article><div class="etikett">Utdelning</div><div class="varde">{{ b.utdelning|kr:0 }}</div><div class="under">varav {{ b.utdelning_inom|kr:0 }} inom gränsbeloppet</div></article>
+  <article><div class="etikett">Netto till dig</div><div class="varde">{{ b.netto|kr:0 }}</div><div class="under">{{ b.netto_manad|kr:0 }} kr/mån</div></article>
+  <article><div class="etikett">Kvar i bolaget</div><div class="varde">{{ b.kvar_i_bolaget|kr:0 }}</div><div class="under">efter bolagsskatt</div></article>
+  <article><div class="etikett">Skatter och avgifter</div><div class="varde">{{ b.skattekvot }} %</div><div class="under">{{ b.totala_skatter|kr:0 }} kr</div></article>
+</div>
+
+<div class="dash">
+<section class="kort">
+  <div class="kort-rubrik"><h2>Bästa fördelningen</h2></div>
+  <table>
+    <tr><td>Resultat före din lön</td><td class="tal">{{ r.f.resultat_fore_agarlon|kr:0 }}</td></tr>
+    <tr><td>Lön</td><td class="tal">−{{ b.lon|kr:0 }}</td></tr>
+    <tr><td>Arbetsgivaravgift {{ r.f.arbetsgivaravgift|kr }} %</td><td class="tal">−{{ b.arbetsgivaravgift|kr:0 }}</td></tr>
+    <tr><td>Bolagsskatt 20,6 %</td><td class="tal">−{{ b.bolagsskatt|kr:0 }}</td></tr>
+    {% if r.f.fritt_eget_kapital %}<tr><td>Fritt eget kapital från tidigare år</td><td class="tal">{{ r.f.fritt_eget_kapital|kr:0 }}</td></tr>{% endif %}
+    <tr class="summa"><td>Kan delas ut</td><td class="tal">{{ b.utdelningsbart|kr:0 }}</td></tr>
+    <tr><td>Utdelning</td><td class="tal">{{ b.utdelning|kr:0 }}</td></tr>
+    <tr><td>Kvar i bolaget</td><td class="tal">{{ b.kvar_i_bolaget|kr:0 }}</td></tr>
+  </table>
+  <h3 class="liten-rubrik">Till dig</h3>
+  <table>
+    <tr><td>Lön</td><td class="tal">{{ b.lon|kr:0 }}</td></tr>
+    <tr><td>Skatt på lönen (kommunal {{ r.f.kommunalskatt|kr }} %{% if b.inkomstskatt.statlig %}, statlig{% endif %}, efter jobbskatteavdrag)</td><td class="tal">−{{ b.skatt_lon|kr:0 }}</td></tr>
+    <tr><td>Utdelning inom gränsbeloppet ({{ b.gransbelopp.summa|kr:0 }}), 20 %</td><td class="tal">{{ b.utdelning_inom|kr:0 }}</td></tr>
+    {% if b.utdelning_tjanst %}<tr><td>Utdelning över gränsbeloppet, beskattas som lön</td><td class="tal">{{ b.utdelning_tjanst|kr:0 }}</td></tr>{% endif %}
+    {% if b.utdelning_over_tak %}<tr><td>Utdelning över 90 inkomstbasbelopp, 30 %</td><td class="tal">{{ b.utdelning_over_tak|kr:0 }}</td></tr>{% endif %}
+    <tr><td>Skatt på utdelningen</td><td class="tal">−{{ b.skatt_utdelning|kr:0 }}</td></tr>
+    <tr class="summa"><td>Netto</td><td class="tal">{{ b.netto|kr:0 }}</td></tr>
+  </table>
+</section>
+
+<section class="kort">
+  <div class="kort-rubrik"><h2>Gränsbelopp {{ b.gransbelopp.ar|stringformat:"d" }}</h2></div>
+  <table>
+    <tr><td>Grundbelopp 4 × {{ b.gransbelopp.ibb|kr:0 }}</td><td class="tal">{{ b.gransbelopp.grundbelopp|kr:0 }}</td></tr>
+    <tr><td>Lönebaserat: 50 % av (löner {{ b.gransbelopp.loneunderlag|kr:0 }} − {{ b.gransbelopp.loneavdrag|kr:0 }})</td><td class="tal">{{ b.gransbelopp.lonebaserat|kr:0 }}</td></tr>
+    <tr><td>Sparat utrymme</td><td class="tal">{{ b.gransbelopp.sparat|kr:0 }}</td></tr>
+    <tr class="summa"><td>Gränsbelopp</td><td class="tal">{{ b.gransbelopp.summa|kr:0 }}</td></tr>
+  </table>
+  {% if b.utdelning_inom < b.gransbelopp.summa %}<p class="liten-text">Outnyttjat gränsbelopp, {{ b.gransbelopp.summa|sub:b.utdelning_inom|kr:0 }} kr,
+    sparas till kommande år.</p>{% endif %}
+  <h3 class="liten-rubrik">Bra att veta</h3>
+  <ul class="liten-text">
+    <li>Pensionsgrundande lön: {{ b.pensionsgrundande|kr:0 }} kr. Utdelning ger ingen allmän pension eller sjukpenning.</li>
+    <li>Lönen behöver överstiga {{ b.gransbelopp.loneavdrag|kr:0 }} kr (8 inkomstbasbelopp) innan den ger lönebaserat utrymme.</li>
+    <li>Utdelning kräver fastställd balansräkning, beslut på årsstämman och att bolaget har kvar tillräckligt kapital.</li>
+  </ul>
+</section>
+</div>
+{% endwith %}
+
+{% if r.diagram %}{% with d=r.diagram %}
+<article>
+  <h3 class="liten-rubrik">Netto till dig beroende på lön</h3>
+  <svg viewBox="0 0 {{ d.bredd }} {{ d.hojd }}" style="width:100%;max-width:{{ d.bredd }}px;height:auto" role="img" aria-label="Netto som funktion av lön">
+    <line x1="40" y1="{{ d.hojd|add:'-30' }}" x2="{{ d.bredd|add:'-20' }}" y2="{{ d.hojd|add:'-30' }}" stroke="#d0d5dd"/>
+    <polyline points="{{ d.linje }}" fill="none" stroke="#0f766e" stroke-width="2"/>
+    <circle cx="{{ d.bast_x }}" cy="{{ d.bast_y }}" r="5" fill="#ea580c"/>
+    <text x="40" y="{{ d.hojd|add:'-12' }}" font-size="11" fill="#6b7280">0 kr lön</text>
+    <text x="{{ d.bredd|add:'-20' }}" y="{{ d.hojd|add:'-12' }}" font-size="11" fill="#6b7280" text-anchor="end">{{ d.xmax|kr:0 }} kr lön</text>
+    <text x="44" y="18" font-size="11" fill="#6b7280">netto {{ d.ymax|kr:0 }}</text>
+  </svg>
+  <p class="liten-text dimmad">Den orange punkten är den bästa fördelningen.</p>
+</article>
+{% endwith %}{% endif %}
+
+<article>
+  <h3 class="liten-rubrik">Jämför</h3>
+  <table>
+    <thead><tr><th class="tal">Lön</th><th class="tal">Utdelning</th><th class="tal">varav inom gränsbelopp</th>
+      <th class="tal">Netto till dig</th><th class="tal">Kvar i bolaget</th><th class="tal">Skatter och avgifter</th></tr></thead>
+    <tbody>{% for a in r.tabell %}
+      <tr{% if a == r.bast %} class="summa"{% endif %}><td class="tal">{{ a.lon|kr:0 }}</td><td class="tal">{{ a.utdelning|kr:0 }}</td>
+        <td class="tal">{{ a.utdelning_inom|kr:0 }}</td><td class="tal">{{ a.netto|kr:0 }}</td>
+        <td class="tal">{{ a.kvar_i_bolaget|kr:0 }}</td><td class="tal">{{ a.skattekvot }} %</td></tr>{% endfor %}</tbody>
+  </table>
+</article>
+{% elif r %}
+<p class="meddelande warning">Det finns ingen möjlig fördelning med de här villkoren. Kontrollera resultat, maxbelopp och lägsta lön.</p>
+{% endif %}
+
+<article>
+  <h3 class="liten-rubrik">Förutsättningar</h3>
+  <p class="liten-text">Förifyllt resultat: prognos {{ prognos.prognos|kr:0 }} kr{% if prognos.budget %} (bokfört + {{ prognos.budget }}){% endif %}
+    plus lönekostnader {{ prognos.loner_tillbaka|kr:0 }} kr som läggs tillbaka. Fritt eget kapital vid förra årsskiftet:
+    {{ fritt_fg|kr:0 }} kr.</p>
+  <form method="get" class="formgrid" onsubmit="this.csrfmiddlewaretoken.disabled = !(event.submitter && event.submitter.name === 'spara')">{% csrf_token %}
+    {% for f in form %}<label>{% if f.field.widget.input_type == "checkbox" %}{{ f }} {{ f.label }}{% else %}{{ f.label }} {{ f }}{% endif %}
+      {% if f.errors %}<small class="negativ">{{ f.errors|join:" " }}</small>{% elif f.help_text %}<small class="dimmad">{{ f.help_text }}</small>{% endif %}</label>{% endfor %}
+    <div class="bred knappar"><button>Räkna</button>
+      <button formmethod="post" formaction="?" class="outline" name="spara" value="1">Spara skatt, ägarandel och maxbelopp som standard</button></div>
+  </form>
+  <p class="liten-text dimmad">Skatteregler för inkomståret 2026 (Skatteverket SKV 433): grundavdrag, jobbskatteavdrag,
+    statlig skatt över 643 000 kr, skattereduktion för förvärvsinkomst och allmän pensionsavgift. Förutsätter att du är under 66 år,
+    saknar andra inkomster och att lönen är densamma varje år. Räntebaserat utrymme och tjänstepension ingår inte.
+    Kalkylen är ett beslutsunderlag – stäm av med revisor eller rådgivare före större beslut.</p>
+</article>
+{% endblock %}

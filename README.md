@@ -208,6 +208,9 @@ Lönedelen är ett stöd för enkla löner (t.ex. ägarlön). Semesterlöneskuld
 
 - **Planering → Likviditet:** saldot på företagskontot vecka för vecka, med fakturor, löner, skatter och moms.
 - **Planering → Skatt och utdelning:** skatteprognos mot F-skatt och gränsbelopp enligt 3:12-reglerna.
+- **Lön → Lön eller utdelning:** räknar fram hur mycket du ska ta i lön och utdelning för att få ut mest efter
+  skatt, med ett maxbelopp för lön + utdelning om du vill. Claude kan räkna på samma sak ("hur ska jag ta ut
+  pengar i år?").
 - **Planering → Viktiga datum:** Skatteverkets och Bolagsverkets datum, även som kalenderfil.
 - **Försäljning → Uppdragsuppföljning:** beläggning, intäkt per kund och uppdrag som tar slut.
 - **Fakturor:** "Visa PDF" och "Skicka med e-post" (ett utkast som öppnas i Outlook). Förfallna fakturor får

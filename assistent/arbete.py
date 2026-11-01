@@ -281,3 +281,34 @@ def ratta_verifikation(vernr, orsak, ar=None, datum=None):
     ratt = bok.rattelse(ver, datum, ANVANDARE, text=f"Rättelse av {ver.vernr}: {orsak.strip()}"[:300])
     return _ver_svar(ratt, rattar=ver.vernr,
                      nasta_steg="Bokför nu det som är rätt, t.ex. med registrera_kvitto eller ny_verifikation.")
+
+
+def lon_eller_utdelning(resultat_fore_lon=None, max_uttag=None, max_inkl_avgifter=False, min_lon=0,
+                        fritt_eget_kapital=0, bara_inom_gransbelopp=False):
+    """Bästa fördelning mellan lön och utdelning enligt 3:12-reglerna, med företagets sparade skatteuppgifter."""
+    from planering import lon_utdelning as lu
+    f = Foretag.hamta()
+    idag = _idag()
+    res = _belopp(resultat_fore_lon, "resultat_fore_lon") if resultat_fore_lon not in (None, "") \
+        else lu.resultat_fore_lon(idag)["resultat"]
+    tak = max_uttag if max_uttag not in (None, "") else f.max_uttag
+    forut = lu.Forutsattningar(
+        ar=idag.year, resultat_fore_agarlon=res, kommunalskatt=f.kommunalskatt, avgift=f.begravningsavgift,
+        arbetsgivaravgift=lu.agarens_arbetsgivaravgift(idag.year), agarandel=f.agarandel,
+        sparat=f.sparat_utdelningsutrymme, fritt_eget_kapital=_belopp(fritt_eget_kapital or 0, "fritt_eget_kapital"),
+        max_uttag=_belopp(tak, "max_uttag") if tak is not None else None,
+        max_inklusive_avgifter=bool(max_inkl_avgifter or (max_uttag in (None, "") and f.max_uttag_inkl_avgifter)),
+        min_lon=_belopp(min_lon or 0, "min_lon"), bara_inom_gransbelopp=bool(bara_inom_gransbelopp))
+    bast, alla = lu.optimera(forut)
+    if not bast:
+        raise VerktygsFel("Ingen möjlig fördelning med de villkoren. Kontrollera resultat, maxbelopp och lägsta lön.")
+
+    def kort(a):
+        return {"lon": str(a["lon"]), "utdelning": str(a["utdelning"]), "inom_gransbelopp": str(a["utdelning_inom"]),
+                "netto_till_agaren": str(a["netto"]), "kvar_i_bolaget": str(a["kvar_i_bolaget"]),
+                "skatter_och_avgifter_procent": str(a["skattekvot"])}
+    return {"forutsattningar": {"resultat_fore_lon": str(res), "max_uttag": _s(forut.max_uttag),
+                                "kommunalskatt": str(forut.kommunalskatt), "gransbelopp": str(bast["gransbelopp"]["summa"])},
+            "bast": kort(bast), "jamforelse": [kort(a) for a in lu.jamforelse(forut, bast, alla)],
+            "lank": f"{WEBB}/lon/lon-och-utdelning/",
+            "obs": "Beslutsunderlag enligt 2026 års regler, samma lön varje år, under 66 år. Inte skatterådgivning."}

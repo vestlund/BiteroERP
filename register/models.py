@@ -224,6 +224,16 @@ class Foretag(models.Model):
     sparat_utdelningsutrymme = models.DecimalField(
         "sparat utdelningsutrymme", max_digits=12, decimal_places=0, default=0,
         help_text="Enligt din senaste K10-blankett (rad 'sparat utdelningsutrymme')")
+    kommunalskatt = models.DecimalField(
+        "kommunalskatt %", max_digits=5, decimal_places=2, default=Decimal("32.38"),
+        help_text="Kommun + region där du är folkbokförd (riksgenomsnitt 2026: 32,38 %)")
+    begravningsavgift = models.DecimalField(
+        "begravnings- och kyrkoavgift %", max_digits=4, decimal_places=2, default=Decimal("0.27"))
+    max_uttag = models.DecimalField(
+        "max uttag per år (lön + utdelning)", max_digits=12, decimal_places=0, null=True, blank=True,
+        help_text="Tomt = ingen gräns")
+    max_uttag_inkl_avgifter = models.BooleanField(
+        "maxbeloppet inkluderar arbetsgivaravgifter", default=False)
 
     class Meta:
         verbose_name = "företagsuppgifter"

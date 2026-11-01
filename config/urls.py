@@ -45,6 +45,7 @@ urlpatterns = [
     path("lon/anstallda/<int:pk>/", l.anstalld, name="anstalld"),
     path("lon/anstallda/<int:pk>/andra/", l.anstalld_form, name="anstalld_andra"),
     path("lon/agi/", l.arbetsgivardeklaration, name="agi"),
+    path("lon/lon-och-utdelning/", l.lon_och_utdelning, name="lon_och_utdelning"),
     path("lon/agi/fil/", l.agi_fil, name="agi_fil"),
     path("installningar/behandlingshistorik/", lg.lista, name="logg"),
     path("installningar/behandlingshistorik/export.csv", lg.export_csv, name="logg_csv"),

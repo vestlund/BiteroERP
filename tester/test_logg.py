@@ -76,7 +76,8 @@ class Loggning(TestCase):
         self.client.force_login(u)
         self.client.post("/register/foretag/", {"namn": "Bitero AB", "nasta_fakturanummer": 180,
                                                 "momsperiod": "kvartal", "drojsmalsranta": "x",
-                                                "agarandel": "100", "sparat_utdelningsutrymme": "0"})
+                                                "agarandel": "100", "sparat_utdelningsutrymme": "0",
+                                                "kommunalskatt": "32.38", "begravningsavgift": "0.27"})
         h = self.senaste(modell="register.Foretag")
         self.assertEqual(h.anvandare, "test")
         self.assertEqual(h.kalla, "POST /register/foretag/")
