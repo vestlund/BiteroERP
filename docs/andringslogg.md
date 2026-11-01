@@ -3,6 +3,12 @@
 Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
 fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
 
+## 2026.11.01-4
+
+- Startkontrollen rapporterade felaktigt att verifikationer inte balanserade. SQLite summerar belopp som
+  flyttal (t.ex. 5e-12 i stället för 0). Kontrollen summerar nu exakt. Likviditetsprognosens bank- och
+  lönesummor avrundas till ören på samma sätt.
+
 ## 2026.11.01-3
 
 - Sidan Skatt och utdelning och påminnelseavgiften på fakturor använder Django-formulär i stället för egen

@@ -23,7 +23,7 @@ from verksamhet import halsokontroll as h
 from verksamhet.management.commands import backup
 from verksamhet.management.commands.extern_kopia import extern_kopia
 
-from .grund import datum, grunddata
+from .grund import d, datum, grunddata
 
 
 class TillfalligLagring(TestCase):
@@ -172,6 +172,11 @@ class Startkontroller(TillfalligLagring):
         with mock.patch.object(h, "lokala_andringar", return_value=None):
             self.assertEqual(h.kor_alla(), [])
         self.assertEqual(h.senaste(), [])
+
+    def test_flyttalsavrundning_ar_ingen_obalans(self):
+        # SQLite summerar 0,10 + 0,20 − 0,30 till 5,55e-17; verifikationen balanserar ändå
+        bok.bokfor(datum("2026-03-02"), "Öresbelopp", [(5410, d("0.10")), (6570, d("0.20")), (1930, d("-0.30"))])
+        self.assertIsNone(h.balans())
 
     def test_obalans_och_bruten_historik(self):
         with connection.cursor() as c:

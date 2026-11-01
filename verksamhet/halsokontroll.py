@@ -6,13 +6,14 @@ på varje sida tills nästa start där allt är i ordning.
 
 import json
 import subprocess
+from collections import defaultdict
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
+from decimal import Decimal
 from pathlib import Path
 
 from django.conf import settings
 from django.db import connection
-from django.db.models import Sum
 
 FEL, VARNING = "fel", "varning"
 EXTERN_INTERVALL = 35  # dagar mellan kopior till extern disk
@@ -47,8 +48,11 @@ def behandlingshistoriken():
 def balans():
     from bokforing.models import Transaktion, Verifikation
 
-    idn = list(Transaktion.objects.values("verifikation").annotate(s=Sum("belopp")).exclude(s=0)
-               .values_list("verifikation", flat=True)[:10])
+    # Summeras exakt i Python: SQLite summerar decimaltal som flyttal och ger t.ex. 5e-12 i stället för 0.
+    summor = defaultdict(Decimal)
+    for ver_id, belopp in Transaktion.objects.values_list("verifikation", "belopp").iterator(chunk_size=5000):
+        summor[ver_id] += belopp
+    idn = [v for v, s in summor.items() if s][:10]
     if idn:
         return Anmarkning(FEL, "Verifikationer som inte balanserar",
                           ", ".join(v.vernr for v in Verifikation.objects.filter(pk__in=idn)) + ".")

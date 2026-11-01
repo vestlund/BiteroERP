@@ -43,7 +43,7 @@ def startsaldo(idag):
     post = Bankpost.objects.filter(konto_id=1930, saldo__isnull=False).order_by("-datum", "-id").first()
     if post:
         senare = Bankpost.objects.filter(konto_id=1930, datum__gt=post.datum).aggregate(s=Sum("belopp"))["s"]
-        return post.saldo + Decimal(str(senare or 0)), f"enligt banken {post.datum}"
+        return post.saldo + bok._d(senare), f"enligt banken {post.datum}"
     s = bok.saldon(dt.date(idag.year, 1, 1), idag).get(1930, {}).get("ub", NOLL)
     return s, "bokfört saldo på 1930"
 
@@ -59,7 +59,7 @@ def _senaste_fskatt():
 def _manad(ar, m, konton):
     qs = Transaktion.objects.filter(verifikation__datum__year=ar, verifikation__datum__month=m,
                                     konto__nummer__range=konton)
-    return qs.aggregate(d=Sum("belopp"))["d"]
+    return bok._d(qs.aggregate(d=Sum("belopp"))["d"])
 
 
 def lon_bokford(ar, m):
