@@ -67,8 +67,13 @@ class Prognos(TestCase):
     def test_sidan(self):
         self.client.force_login(anvandare())
         self.assertContains(self.client.get(reverse("skatt") + "?egen_lon=600000"), "Gränsbelopp")
-        self.client.post(reverse("skatt"), {"fskatt_manad": "12 000", "agarandel": "100", "sparat": "5000"})
+        self.client.post(reverse("skatt"), {"fskatt_manad": "12 000", "agarandel": "100",
+                                            "sparat_utdelningsutrymme": "5 000"})
         fo = Foretag.hamta()
         self.assertEqual((fo.fskatt_manad, fo.sparat_utdelningsutrymme), (d("12000"), d("5000")))
         r = self.client.post(reverse("skatt"), {"fskatt_manad": "x", "agarandel": "100"}, follow=True)
         self.assertContains(r, "Kontrollera")
+        r = self.client.post(reverse("skatt"), {"fskatt_manad": "1", "agarandel": "150"})
+        self.assertContains(r, "Kontrollera")
+        self.assertEqual(Foretag.hamta().agarandel, d("100"))
+        self.assertContains(self.client.get(reverse("skatt") + "?egen_lon=abc"), "Gränsbelopp")

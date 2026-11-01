@@ -31,3 +31,17 @@ def nasta_eller(request, standard, *args, **kwargs):
                                                  require_https=request.is_secure()):
         return redirect(nasta)
     return redirect(standard, *args, **kwargs)
+
+
+class ArForm(forms.Form):
+    """Räkenskapsår i adressen eller ett formulär, t.ex. ?ar=2026."""
+
+    ar = forms.IntegerField(min_value=2000, max_value=2100)
+
+
+def valt_ar(data, standard):
+    """Året i data['ar'] om det är giltigt, annars standard. Returnerar (år, giltigt)."""
+    if not data.get("ar"):
+        return standard, True
+    f = ArForm(data)
+    return (f.cleaned_data["ar"], True) if f.is_valid() else (standard, False)

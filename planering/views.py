@@ -51,33 +51,23 @@ def frister_ics(request):
 
 
 def skattesida(request):
-    from decimal import Decimal, InvalidOperation
+    from django.contrib import messages
+    from django.shortcuts import redirect
 
     from . import skatt
+    from .forms import EgenLonForm, SkatteuppgifterForm
     idag = timezone.localdate()
     foretag = Foretag.hamta()
+    form = SkatteuppgifterForm(request.POST or None, instance=foretag)
     if request.method == "POST":
-        from django.contrib import messages
-        from django.shortcuts import redirect
-        try:
-            foretag.fskatt_manad = Decimal(request.POST["fskatt_manad"].replace(" ", "").replace(",", ".")) \
-                if request.POST.get("fskatt_manad", "").strip() else None
-            foretag.agarandel = Decimal(request.POST.get("agarandel", "100").replace(",", "."))
-            foretag.sparat_utdelningsutrymme = Decimal(
-                (request.POST.get("sparat") or "0").replace(" ", "").replace(",", "."))
-            if not (0 < foretag.agarandel <= 100):
-                raise InvalidOperation
-            foretag.save(update_fields=["fskatt_manad", "agarandel", "sparat_utdelningsutrymme"])
+        if form.is_valid():
+            form.save()
             messages.success(request, "Uppgifterna sparades.")
-        except (InvalidOperation, KeyError):
-            messages.error(request, "Kontrollera beloppen (ägarandel 1–100 %).")
-        return redirect("skatt")
-    egen_lon = None
-    if request.GET.get("egen_lon"):
-        try:
-            egen_lon = Decimal(request.GET["egen_lon"].replace(" ", "").replace(",", "."))
-        except InvalidOperation:
-            egen_lon = None
+            return redirect("skatt")
+        messages.error(request, "Kontrollera uppgifterna (ägarandel 1–100 %, belopp noll eller mer).")
+    lonform = EgenLonForm(request.GET or None)
+    egen_lon = lonform.cleaned_data["egen_lon"] if lonform.is_bound and lonform.is_valid() else None
     return render(request, "planering/skatt.html", {
         "prognos": skatt.skatteprognos(idag), "utd": skatt.utdelning(idag, egen_lon=egen_lon),
+        "form": form, "lonform": lonform,
         "foretag": foretag, "egen_lon": egen_lon, "idag": idag})

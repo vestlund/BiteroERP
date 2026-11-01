@@ -107,6 +107,7 @@ class Sidan(Grund):
         url = reverse("bokslut") + "?ar=2026"
         r = self.client.get(url)
         self.assertContains(r, "Checklista")
+        self.assertContains(self.client.get(reverse("bokslut") + "?ar=x"), "Ogiltigt räkenskapsår")
         self.client.post(reverse("bokslut"), {"ar": "2026", "atgard": "periodisering", "typ": "upplupen_intakt",
                                               "konto": "3041", "belopp": "4 350,00", "text": "dec"})
         self.assertTrue(Verifikation.objects.filter(text__startswith="Bokslut 2026: Upplupen intäkt").exists())

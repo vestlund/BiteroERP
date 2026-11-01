@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from config.formular import valt_ar
 from register.models import Konto
 from verksamhet.models import Uppdrag
 
@@ -118,7 +119,7 @@ def uppfoljning(request, pk=None):
     if pk:
         b = get_object_or_404(Budget, pk=pk)
     else:
-        ar = int(request.GET.get("ar") or idag.year)
+        ar, _ = valt_ar(request.GET, idag.year)
         b = Budget.objects.filter(ar=ar, huvudbudget=True).first() or Budget.objects.filter(ar=ar).first()
         if not b:
             return render(request, "budget/ingen.html", {"ar": ar})

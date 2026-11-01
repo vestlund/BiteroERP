@@ -46,13 +46,11 @@
 <article>
   <h3 class="liten-rubrik">Dina uppgifter</h3>
   <form method="post" class="formgrid">{% csrf_token %}
-    <label>Debiterad F-skatt per månad <input name="fskatt_manad" value="{{ foretag.fskatt_manad|default_if_none:'' }}" inputmode="decimal"></label>
-    <label>Ägarandel % <input name="agarandel" value="{{ foretag.agarandel|kr:0 }}" inputmode="decimal"></label>
-    <label>Sparat utdelningsutrymme (senaste K10) <input name="sparat" value="{{ foretag.sparat_utdelningsutrymme|kr:0 }}" inputmode="decimal"></label>
+    {% for f in form %}<label>{{ f.label }} {{ f }}{% if f.errors %}<small class="negativ">{{ f.errors|join:" " }}</small>{% endif %}</label>{% endfor %}
     <div><button>Spara</button></div>
   </form>
   <form method="get" class="knappar liten-text">Taket för lönebaserat utrymme: din egen lön förra året
-    <input name="egen_lon" value="{{ egen_lon|default_if_none:'' }}" inputmode="decimal" style="width:9rem"><button class="outline liten">Räkna</button></form>
+    {{ lonform.egen_lon }}<button class="outline liten">Räkna</button></form>
   <p class="liten-text dimmad">Beräkningen är ett stöd för planering och ersätter inte K10-blanketten. Inkomstbasbelopp: 2025 80 600 kr, 2026 83 400 kr.
     Ränta på omkostnadsbelopp över 100 000 kr ingår inte.</p>
 </article>

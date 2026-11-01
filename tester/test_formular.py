@@ -152,3 +152,21 @@ class Betalfil(Grund):
                                                betaldatum=datum("2026-01-01"))
         r = self.client.post(reverse("io_post", args=["betalfil"]), {"faktura": [lf.pk], "datum": "2026-04-30"})
         self.assertEqual(r.status_code, 302)
+
+
+class ValtAr(TestCase):
+    def test_ogiltiga_ar_ger_standard(self):
+        from config.formular import valt_ar
+        self.assertEqual(valt_ar({"ar": "2025"}, 2026), (2025, True))
+        self.assertEqual(valt_ar({}, 2026), (2026, True))
+        self.assertEqual(valt_ar({"ar": "x"}, 2026), (2026, False))
+        self.assertEqual(valt_ar({"ar": "99999"}, 2026), (2026, False))
+
+    def test_sidor_med_ar_i_adressen(self):
+        from django.urls import reverse
+
+        from .grund import anvandare
+        self.client.force_login(anvandare())
+        for namn in ("moms", "budget_aktuell", "uppdragsuppfoljning", "bokslut"):
+            with self.subTest(namn=namn):
+                self.assertIn(self.client.get(reverse(namn) + "?ar=abc").status_code, (200,))

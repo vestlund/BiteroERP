@@ -99,7 +99,10 @@ class Dokument(TestCase):
         self.assertEqual(r["Content-Type"], "message/rfc822")
         self.f.refresh_from_db()
         self.assertIsNotNone(self.f.utskickad)
-        r = self.client.post(reverse("faktura_paminnelse", args=[self.f.pk]), {"format": "pdf", "avgift": "60"})
+        r = self.client.post(reverse("faktura_paminnelse", args=[self.f.pk]), {"format": "pdf", "avgift": "abc"},
+                             follow=True)
+        self.assertContains(r, "Påminnelseavgiften ska vara")
+        r = self.client.post(reverse("faktura_paminnelse", args=[self.f.pk]), {"format": "pdf", "avgift": "60,00"})
         self.assertEqual(r["Content-Type"], "application/pdf")
         self.f.refresh_from_db()
         self.assertEqual(self.f.paminnelser, 1)

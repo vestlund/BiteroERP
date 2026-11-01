@@ -3,6 +3,13 @@
 Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
 fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
 
+## 2026.11.01-3
+
+- Sidan Skatt och utdelning och påminnelseavgiften på fakturor använder Django-formulär i stället för egen
+  tolkning av indata. Felaktiga värden ger ett meddelande och sparas inte.
+- Räkenskapsår i adressen (`?ar=`) kontrolleras på ett ställe (`config.formular.valt_ar`). Moms, budget,
+  uppdragsuppföljning och bokslut visar standardåret i stället för ett fel när året är ogiltigt.
+
 ## 2026.11.01-2
 
 - **Lön eller utdelning** (Lön → Lön eller utdelning): räknar fram fördelningen mellan lön och utdelning som

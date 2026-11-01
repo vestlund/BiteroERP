@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from config.formular import valt_ar
 from register.models import Foretag, Konto, Kund
 
 from . import fakturadokument, tjanster
@@ -18,6 +19,7 @@ from .forms import (
     FakturaHuvudForm,
     FakturaradFormSet,
     FaktureraTidForm,
+    PaminnelseForm,
     TidcellForm,
     TidpostForm,
     UppdragForm,
@@ -365,13 +367,13 @@ def faktura_paminnelse(request, pk):
     f = get_object_or_404(Faktura.objects.select_related("kund"), pk=pk, status=Faktura.SKICKAD)
     foretag = Foretag.hamta()
     idag = timezone.localdate()
-    try:
-        avgift = Decimal((request.POST.get("avgift") or "0").replace(",", "."))
-    except Exception:
-        avgift = Decimal(0)
-    pdf, _, _ = fakturadokument.paminnelse_pdf(f, foretag, idag, max(avgift, Decimal(0)))
+    form = PaminnelseForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, "Påminnelseavgiften ska vara ett belopp mellan 0 och 1 000 kr.")
+        return redirect(f)
+    pdf, _, _ = fakturadokument.paminnelse_pdf(f, foretag, idag, form.cleaned_data["avgift"] or Decimal(0))
     Faktura.objects.filter(pk=f.pk).update(paminnelser=f.paminnelser + 1, senaste_paminnelse=idag)
-    if request.POST.get("format") == "pdf":
+    if form.cleaned_data["format"] == "pdf":
         return _pdfsvar(pdf, f"Paminnelse_faktura_{f.nummer}.pdf", True)
     return _emlsvar(fakturadokument.paminnelse_eml(f, foretag, pdf), f"Paminnelse_faktura_{f.nummer}.eml")
 
@@ -442,10 +444,7 @@ def sok(request):
 def uppdragsuppfoljning(request):
     from . import uppfoljning
     idag = timezone.localdate()
-    try:
-        ar = int(request.GET.get("ar", idag.year))
-    except ValueError:
-        ar = idag.year
+    ar, _ = valt_ar(request.GET, idag.year)
     bel = uppfoljning.belaggning(ar, idag)
     kunder, total = uppfoljning.per_kund(ar)
     MAN = ["Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"]

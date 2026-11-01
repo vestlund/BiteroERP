@@ -80,3 +80,8 @@ class TidcellForm(forms.Form):
     datum = forms.DateField()
     timmar = BeloppField(min_value=0, max_value=24, max_digits=5, tomt_som_noll=True,
                      error_messages={"min_value": "Timmar måste vara 0–24", "max_value": "Timmar måste vara 0–24"})
+
+
+class PaminnelseForm(forms.Form):
+    avgift = BeloppField(label="Påminnelseavgift", required=False, tomt_som_noll=True, min_value=0, max_value=1000)
+    format = forms.ChoiceField(choices=[("eml", "E-post"), ("pdf", "PDF")], required=False)

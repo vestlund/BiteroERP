@@ -11,7 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from config.formular import nasta_eller
+from config.formular import ArForm, nasta_eller, valt_ar
 from register.models import Foretag, Konto, Leverantor
 from verksamhet.models import Faktura
 
@@ -337,7 +337,7 @@ def moms(request):
 
     foretag = Foretag.hamta()
     idag = timezone.localdate()
-    ar = int(request.GET.get("ar", idag.year))
+    ar, _ = valt_ar(request.GET, idag.year)
     typ = request.GET.get("typ", foretag.momsperiod)
     perioder = _perioder(ar, typ)
     vald = request.GET.get("period")
@@ -535,12 +535,10 @@ def arsarkiv(request):
     ar_lista = sorted(set(Verifikation.objects.values_list("ar", flat=True)), reverse=True) or \
         [timezone.localdate().year]
     if request.method == "POST":
-        try:
-            ar = int(request.POST.get("ar", ""))
-        except ValueError:
+        arform = ArForm(request.POST)
+        if not arform.is_valid() or arform.cleaned_data["ar"] not in ar_lista:
             raise Http404
-        if ar not in ar_lista:
-            raise Http404
+        ar = arform.cleaned_data["ar"]
         filnamn, data, info = arkiv.skapa(ar)
         from config.kryptering import KrypteringsFel
         try:
@@ -583,10 +581,10 @@ def bokslutssida(request):
     from .forms import PeriodiseringForm
 
     idag = timezone.localdate()
-    try:
-        ar = int(request.GET.get("ar") or request.POST.get("ar") or (idag.year - 1 if idag.month <= 6 else idag.year))
-    except ValueError:
-        raise Http404
+    standard = idag.year - 1 if idag.month <= 6 else idag.year
+    ar, giltigt = valt_ar({"ar": request.GET.get("ar") or request.POST.get("ar")}, standard)
+    if not giltigt:
+        messages.error(request, f"Ogiltigt räkenskapsår – visar {standard}.")
     pform = PeriodiseringForm(request.POST if request.POST.get("atgard") == "periodisering" else None,
                               initial={"typ": "upplupen_intakt", "konto": 3041,
                                        "belopp": bokslut.upparbetat_ej_fakturerat(ar) or None})

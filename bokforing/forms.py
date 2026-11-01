@@ -197,3 +197,4 @@ class PeriodiseringForm(forms.Form):
         error_messages={"invalid_choice": "Kontot finns inte (ange ett resultatkonto 3000–8999)."})
     belopp = BeloppField(min_value=Decimal("0.01"))
     text = forms.CharField(max_length=120, required=False)
+
