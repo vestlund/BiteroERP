@@ -3,6 +3,15 @@
 Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
 fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
 
+## 2026.11.01-1
+
+- **Claude-kopplingen utökad** med tid (rapportera tid, ofakturerad tid), fakturautkast av tid,
+  avstämning av bankhändelser, manuella verifikationer med underlag, rättelser och läsning av huvudbok,
+  resultat och balans, likviditet och viktiga datum. Varje skrivning godkänns i Claude-appen.
+- Logiken för att fakturera tid och hantera bankhändelser är flyttad från webbsidorna till tjänstefunktioner
+  (`verksamhet/tjanster.py`, `bokforing/avstamning.hantera`) som både webben och Claude använder.
+- En bankhändelse som redan är kopplad till en verifikation kan inte bokföras en gång till.
+
 ## 2026.10.31-7
 
 - Bilagor lämnades öppna efter att kontrollsumman räknats, vilket gör att Windows låser filen. Rättat.

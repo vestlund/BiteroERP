@@ -111,6 +111,15 @@ Claude i skrivbordsappen kan bokföra kvitton direkt i systemet. Allt körs loka
 3. Skriv till exempel *"bokför kvittona i inkorgen"*. Claude läser underlaget, föreslår konto och moms och
    ber om ditt godkännande för varje bokning.
 
+Claude kan också:
+- **rapportera tid** ("8 timmar på Nordhamn i dag") och **skapa fakturautkast** av ofakturerad tid
+  (du slutför och skickar själv),
+- **stämma av bankhändelser** ("gå igenom bankhändelserna"): koppla till fakturor eller bokföra mot motkonto,
+- **bokföra manuella verifikationer**, t.ex. skattekontot, och **rätta** en felaktig verifikation,
+- **svara på frågor** om huvudbok, resultat och balans, likviditet, obetalda fakturor och viktiga datum.
+
+Lön, momsavräkning, bokslut, låsning, att slutföra och makulera fakturor och betalfiler gör du själv.
+
 Datorn måste vara på och Claude-appen öppen. Webbservern behöver inte köra. HEIC-bilder (iPhone) stöds inte;
 ställ in kameran på "Mest kompatibel" eller exportera som JPG. Ta bort kopplingen med
 `uv run python manage.py installera_claude --ta-bort`.

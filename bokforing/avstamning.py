@@ -126,6 +126,65 @@ def matcha(post, anvandare=""):
     return beskr
 
 
+def hantera(post, atgard, id=None, motkonto=None, text="", spara_regel=False, regeltext="", anvandare=""):
+    """Gör en åtgärd på en bankpost, som på bank-sidan. Returnerar posten.
+
+    atgard: kundfaktura, levfaktura, ver (koppla till befintlig), konto (bokför mot motkonto), regel,
+    ignorera eller aterstall. Fel ger BokforingsFel.
+    """
+    from verksamhet.models import Faktura
+
+    if atgard not in ("ignorera", "aterstall") and post.verifikation_id:
+        raise bok.BokforingsFel(f"Bankposten är redan hanterad ({post.verifikation.vernr}).")
+    with transaction.atomic():
+        if atgard == "kundfaktura":
+            f = Faktura.objects.filter(pk=id, status=Faktura.SKICKAD).first()
+            if not f:
+                raise bok.BokforingsFel("Kundfakturan finns inte eller är inte obetald.")
+            f.status, f.betaldatum = Faktura.BETALD, post.datum
+            f.save()
+            if not f.fran_visma and not f.verifikationer.filter(serie="F").exists():
+                bok.bokfor_kundfaktura(f, anvandare)
+            post.verifikation = bok.bokfor_inbetalning(f, post.datum, post.konto_id, anvandare)
+        elif atgard == "levfaktura":
+            lf = Leverantorsfaktura.objects.filter(pk=id, betaldatum__isnull=True).first()
+            if not lf:
+                raise bok.BokforingsFel("Leverantörsfakturan finns inte eller är redan betald.")
+            post.verifikation = bok.bokfor_utbetalning(lf, post.datum, post.konto_id, anvandare)
+        elif atgard == "ver":
+            ver = Verifikation.objects.filter(pk=id).first()
+            if not ver:
+                raise bok.BokforingsFel("Verifikationen finns inte.")
+            post.verifikation = ver
+        elif atgard == "konto":
+            if motkonto is None:
+                raise bok.BokforingsFel("Ange motkonto.")
+            motkonto_id = getattr(motkonto, "pk", motkonto)
+            post.verifikation = bok.bokfor(post.datum, text or post.text,
+                                           [(post.konto_id, post.belopp), (motkonto_id, -post.belopp)], "B", anvandare)
+            if spara_regel:
+                regeltext = (regeltext or "").strip()
+                if not regeltext:
+                    raise bok.BokforingsFel("Ange vilken text regeln ska känna igen.")
+                Matchningsregel.objects.create(
+                    namn=regeltext, text_innehaller=regeltext, riktning="in" if post.belopp > 0 else "ut",
+                    motkonto_id=motkonto_id, automatisk=True)
+        elif atgard == "regel":
+            regel = Matchningsregel.objects.filter(pk=id).first()
+            if not regel:
+                raise bok.BokforingsFel("Regeln finns inte.")
+            post.verifikation = bokfor_regel(post, regel, anvandare)
+        elif atgard == "ignorera":
+            post.ignorerad = True
+        elif atgard == "aterstall":
+            post.ignorerad = False
+            post.verifikation = None
+        else:
+            raise bok.BokforingsFel(f"Okänd åtgärd: {atgard}")
+        post.save()
+    return post
+
+
 def matcha_alla(anvandare="", poster=None):
     qs = poster if poster is not None else Bankpost.objects.filter(verifikation__isnull=True, ignorerad=False)
     resultat, fel = [], []

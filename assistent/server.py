@@ -8,6 +8,7 @@ from mcp_types import ToolAnnotations
 
 from logg.sparning import aterstall_kontext, satt_kontext
 
+from . import arbete as a
 from . import verktyg as v
 
 INSTRUKTIONER = """Bitero ERP är bokföringssystemet för Bitero AB (svenskt aktiebolag, BAS-kontoplan, kalenderår).
@@ -29,7 +30,22 @@ Så bokför du ett kvitto eller en leverantörsfaktura:
    betalkonto 2893 om användaren betalat privat) eller `registrera_leverantorsfaktura` (betalas senare).
 6. Svara med verifikationsnumret. Om något är oklart (moms, konto, privat eller företag): fråga användaren först.
 
-Bokförda verifikationer kan inte ändras; fel rättas av användaren i Bitero ERP. Allt du gör loggas."""
+Övrigt du kan göra:
+- Tid: `uppdrag` ger uppdrag_id. `rapportera_tid` sparar tid. `tid` och `ofakturerad_tid` visar läget.
+- Fakturering: `skapa_fakturautkast` skapar ett utkast av ofakturerad tid. Användaren slutför och skickar själv.
+- Bank: `bankhandelser` listar det som inte är avstämt, med förslag. Gå igenom en i taget med
+  `hantera_bankhandelse`: använd förslagen när belopp och motpart stämmer, annars bokför mot motkonto.
+  Vanliga motkonton: 1630 skattekonto (överföring dit), 6570 bankavgift, 2893 återbetalt utlägg till ägaren,
+  8310 ränteintäkt, 2081/2091 eget kapital. Fråga användaren om det är oklart vad en händelse är.
+- Manuella verifikationer: `ny_verifikation` (serie A) för t.ex. skattekontots händelser, med underlag om det
+  finns. Kontrollera att debet = kredit och förklara konteringen innan du bokför.
+- Fel: `ratta_verifikation` vänder en felaktig verifikation. Bokför sedan det rätta.
+- Läsa: `visa_verifikation`, `huvudbok`, `resultat_och_balans`, `likviditet`, `viktiga_datum`, `ekonomi`.
+
+Det här gör användaren själv i Bitero ERP, inte du: bokföra lön, momsavräkning, bokslut, låsa perioder,
+slutföra och skicka fakturor, makulera fakturor och skapa betalfiler. Föreslå gärna, men utför inte.
+
+Bokförda verifikationer kan inte ändras, bara rättas. Allt du gör loggas som användaren Claude."""
 
 server = MCPServer("Bitero ERP", instructions=INSTRUKTIONER)
 
@@ -155,3 +171,120 @@ def ny_leverantor(namn: str, orgnr: str = "", bankgiro: str = "", plusgiro: str 
                   standardkonto: int | None = None, moms_procent: int = 25) -> dict:
     """Lägg upp en ny leverantör (behövs för leverantörsfakturor)."""
     return v.ny_leverantor(namn, orgnr, bankgiro, plusgiro, standardkonto, moms_procent)
+
+
+# ------------------------------------------------------------------ tid, fakturor, bank, verifikationer
+
+@server.tool(annotations=LAS, structured_output=False)
+@_som_claude
+def uppdrag() -> list:
+    """Aktiva uppdrag med uppdrag_id, kund, timpris och ofakturerade timmar."""
+    return a.uppdrag()
+
+
+@server.tool(annotations=LAS, structured_output=False)
+@_som_claude
+def tid(fran: str, till: str) -> dict:
+    """Rapporterad tid mellan två datum (ÅÅÅÅ-MM-DD)."""
+    return a.tid(fran, till)
+
+
+@server.tool(annotations=LAS, structured_output=False)
+@_som_claude
+def ofakturerad_tid(till_och_med: str = "") -> list:
+    """Ofakturerad tid per kund till och med ett datum (standard i dag), med belopp exkl. moms."""
+    return a.ofakturerad_tid(till_och_med or None)
+
+
+@server.tool(annotations=LAS, structured_output=False)
+@_som_claude
+def bankhandelser() -> list:
+    """Bankhändelser som inte är avstämda, med förslag (atgard + id) att använda i hantera_bankhandelse."""
+    return a.bankhandelser()
+
+
+@server.tool(annotations=LAS, structured_output=False)
+@_som_claude
+def visa_verifikation(vernr: str, ar: int | None = None) -> dict:
+    """Visa en verifikation med kontering, t.ex. vernr "L12". Ange ar om numret finns flera år."""
+    return a.visa_verifikation(vernr, ar)
+
+
+@server.tool(annotations=LAS, structured_output=False)
+@_som_claude
+def huvudbok(konto: int, fran: str, till: str) -> dict:
+    """Ingående saldo, transaktioner och utgående saldo för ett konto under en period."""
+    return a.huvudbok(konto, fran, till)
+
+
+@server.tool(annotations=LAS, structured_output=False)
+@_som_claude
+def resultat_och_balans(fran: str, till: str) -> dict:
+    """Resultaträkning för perioden och balansräkning vid periodens slut, per konto."""
+    return a.resultat_och_balans(fran, till)
+
+
+@server.tool(annotations=LAS, structured_output=False)
+@_som_claude
+def likviditet(veckor: int = 13) -> dict:
+    """Prognos för företagskontots saldo vecka för vecka (1–52 veckor)."""
+    return a.likviditet(veckor)
+
+
+@server.tool(annotations=LAS, structured_output=False)
+@_som_claude
+def viktiga_datum(dagar: int = 90) -> list:
+    """Kommande deklarationer och betalningar (moms, arbetsgivardeklaration, skatt, bokslut)."""
+    return a.viktiga_datum(dagar)
+
+
+@server.tool(annotations=SKRIV, structured_output=False)
+@_som_claude
+def rapportera_tid(uppdrag_id: int, datum: str, timmar: str, beskrivning: str = "", fakturerbar: bool = True) -> dict:
+    """Rapportera tid på ett uppdrag. Hämta uppdrag_id med verktyget uppdrag."""
+    return a.rapportera_tid(uppdrag_id, datum, timmar, beskrivning, fakturerbar)
+
+
+@server.tool(annotations=SKRIV, structured_output=False)
+@_som_claude
+def skapa_fakturautkast(kund_nummer: int, till_och_med: str, fakturadatum: str = "",
+                        en_rad_per_post: bool = False) -> dict:
+    """Skapa ett fakturautkast av kundens ofakturerade tid till och med ett datum.
+
+    Utkastet får inget nummer, bokförs inte och skickas inte. Användaren slutför det i Bitero ERP.
+    """
+    return a.skapa_fakturautkast(kund_nummer, till_och_med, fakturadatum or None, en_rad_per_post)
+
+
+@server.tool(annotations=SKRIV, structured_output=False)
+@_som_claude
+def hantera_bankhandelse(bankhandelse_id: int, atgard: str, id: int | None = None, motkonto: int | None = None,
+                         text: str = "", spara_regel: bool = False, regeltext: str = "") -> dict:
+    """Stäm av en bankhändelse.
+
+    atgard: kundfaktura / levfaktura / ver / regel (med id från förslagen i bankhandelser), konto (bokför mot
+    motkonto, t.ex. 1630 skattekonto, 6570 bankkostnad, 2893 återbetalt utlägg, 8310 ränteintäkt) eller ignorera.
+    spara_regel + regeltext: samma text bokförs automatiskt mot motkontot nästa gång.
+    """
+    return a.hantera_bankhandelse(bankhandelse_id, atgard, id, motkonto, text, spara_regel, regeltext)
+
+
+@server.tool(annotations=SKRIV, structured_output=False)
+@_som_claude
+def ny_verifikation(datum: str, text: str, rader: list[dict], underlag: str = "", tillat_dubblett: bool = False) -> dict:
+    """Bokför en manuell verifikation (serie A) för händelser utan eget flöde, t.ex. skattekontot.
+
+    rader: [{"konto": 1630, "debet": "1000"}, {"konto": 1930, "kredit": "1000", "text": "valfri"}].
+    Summan av debet och kredit måste vara lika. underlag: filnamn i inkorgen som sparas som bilaga.
+    """
+    return a.ny_verifikation(datum, text, rader, underlag or None, tillat_dubblett)
+
+
+@server.tool(annotations=SKRIV, structured_output=False)
+@_som_claude
+def ratta_verifikation(vernr: str, orsak: str, ar: int | None = None, datum: str = "") -> dict:
+    """Rätta (vänd) en felaktig verifikation. Skapar en ny verifikation med omvända belopp.
+
+    Bokför sedan det rätta. Kundfakturor makuleras och löner rättas i Bitero ERP, inte här.
+    """
+    return a.ratta_verifikation(vernr, orsak, ar, datum or None)

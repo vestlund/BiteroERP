@@ -1,6 +1,5 @@
 import csv
 import datetime as dt
-from collections import OrderedDict, defaultdict
 from decimal import Decimal
 
 from django.contrib import messages
@@ -13,7 +12,7 @@ from django.views.decorators.http import require_POST
 
 from register.models import Foretag, Konto, Kund
 
-from . import fakturadokument
+from . import fakturadokument, tjanster
 from .forms import (
     BetaldForm,
     FakturaHuvudForm,
@@ -23,13 +22,9 @@ from .forms import (
     TidpostForm,
     UppdragForm,
 )
-from .models import Faktura, Fakturarad, Tidpost, Uppdrag, avrunda
-
-ENHET_TEXT = {"HUR": "tim", "PCE": "st", "DAY": "dag", "MON": "mån"}
-
+from .models import Faktura, Tidpost, Uppdrag
 
 # ---------------------------------------------------------------- översikt
-
 from .oversikt import oversikt  # noqa: E402,F401
 
 # ---------------------------------------------------------------- tidrapport
@@ -194,17 +189,6 @@ def faktura_lista(request):
         "fakturor": qs, "status": status, "statusval": Faktura.STATUS})
 
 
-def _rad_fran_uppdrag(faktura, uppdrag, timmar, beskrivning, ordning):
-    a = uppdrag.artikel
-    konto = a.intaktskonto if a else Konto.objects.filter(pk=3041).first()
-    return Fakturarad.objects.create(
-        faktura=faktura, artikel=a, beskrivning=beskrivning, antal=timmar,
-        enhet=ENHET_TEXT.get(a.enhet, "tim") if a else "tim", a_pris=uppdrag.pris,
-        momssats=a.momssats if a else Decimal(25), konto=konto,
-        kostnadsstalle=uppdrag.kostnadsstalle, ordning=ordning,
-    )
-
-
 def fakturera_tid(request):
     idag = timezone.localdate()
     forra_manad_slut = idag.replace(day=1) - dt.timedelta(days=1)
@@ -213,59 +197,16 @@ def fakturera_tid(request):
     forhandsvisning = None
 
     if form.is_valid():
-        kund = form.cleaned_data["kund"]
-        poster = list(Tidpost.objects.filter(
-            uppdrag__kund=kund, fakturerbar=True, fakturarad__isnull=True,
-            datum__lte=form.cleaned_data["till_och_med"]).select_related("uppdrag__artikel").order_by("datum"))
-        if "skapa" in request.POST and poster:
-            with transaction.atomic():
-                forsta_uppdrag = poster[0].uppdrag
-                f = Faktura.objects.create(
-                    kund=kund, fakturadatum=form.cleaned_data["fakturadatum"],
-                    er_referens=forsta_uppdrag.kundreferens or kund.kontaktperson,
-                    var_referens=Foretag.hamta().var_referens, ordernummer=forsta_uppdrag.ordernummer,
-                    period=_periodtext(poster[0].datum, poster[-1].datum),
-                )
-                grupper = OrderedDict()
-                for p in poster:
-                    grupper.setdefault(p.uppdrag, []).append(p)
-                ordning = 0
-                for uppdrag, pp in grupper.items():
-                    if form.cleaned_data["en_rad_per_post"]:
-                        for p in pp:
-                            ordning += 1
-                            text = f"{p.datum:%Y-%m-%d} {uppdrag.namn}" + (f": {p.beskrivning}" if p.beskrivning else "")
-                            rad = _rad_fran_uppdrag(f, uppdrag, p.timmar, text, ordning)
-                            p.fakturarad = rad
-                            p.save(update_fields=["fakturarad"])
-                    else:
-                        ordning += 1
-                        text = f"{uppdrag.artikel.namn if uppdrag.artikel else uppdrag.namn}, " \
-                               f"{_periodtext(pp[0].datum, pp[-1].datum)}"
-                        if uppdrag.artikel and uppdrag.artikel.namn != uppdrag.namn:
-                            text = f"{uppdrag.namn} – {text}"
-                        rad = _rad_fran_uppdrag(f, uppdrag, sum(p.timmar for p in pp), text, ordning)
-                        Tidpost.objects.filter(id__in=[p.id for p in pp]).update(fakturarad=rad)
-            messages.success(request, "Fakturautkast skapat. Kontrollera och slutför.")
-            return redirect(f)
-        sammanstallning = defaultdict(lambda: {"timmar": Decimal(0), "belopp": Decimal(0)})
-        for p in poster:
-            s = sammanstallning[p.uppdrag]
-            s["timmar"] += p.timmar
-            s["belopp"] += avrunda(p.timmar * p.uppdrag.pris)
-        forhandsvisning = {"poster": poster, "per_uppdrag": dict(sammanstallning),
-                           "netto": sum((s["belopp"] for s in sammanstallning.values()), Decimal(0))}
+        d = form.cleaned_data
+        if "skapa" in request.POST:
+            f = tjanster.skapa_fakturautkast(d["kund"], d["till_och_med"], d["fakturadatum"], d["en_rad_per_post"])
+            if f:
+                messages.success(request, "Fakturautkast skapat. Kontrollera och slutför.")
+                return redirect(f)
+        poster = tjanster.ofakturerad_tid(d["kund"], d["till_och_med"])
+        per_uppdrag, netto = tjanster.sammanstall(poster)
+        forhandsvisning = {"poster": poster, "per_uppdrag": dict(per_uppdrag), "netto": netto}
     return render(request, "verksamhet/fakturera_tid.html", {"form": form, "f": forhandsvisning})
-
-
-MANADER = ["januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september",
-           "oktober", "november", "december"]
-
-
-def _periodtext(fran, till):
-    if (fran.year, fran.month) == (till.year, till.month):
-        return f"{MANADER[fran.month - 1]} {fran.year}".capitalize()
-    return f"{fran:%Y-%m-%d} – {till:%Y-%m-%d}"
 
 
 def faktura_ny(request):
@@ -317,7 +258,7 @@ def faktura_detalj(request, pk):
 
 def _artiklar_json():
     from register.models import Artikel
-    return {str(a.pk): {"namn": a.namn, "pris": str(a.pris), "enhet": ENHET_TEXT.get(a.enhet, a.enhet),
+    return {str(a.pk): {"namn": a.namn, "pris": str(a.pris), "enhet": tjanster.ENHET_TEXT.get(a.enhet, a.enhet),
                         "moms": str(a.momssats), "konto": a.intaktskonto_id}
             for a in Artikel.objects.filter(aktiv=True)}
 

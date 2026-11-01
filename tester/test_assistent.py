@@ -150,7 +150,11 @@ class Server(TestCase):
         self.assertTrue({"inkorg", "visa_underlag", "registrera_kvitto", "registrera_leverantorsfaktura",
                          "sok_leverantor", "kontoplan", "ny_leverantor"} <= namn)
         skriv = {t.name for t in verktyg if t.annotations and not t.annotations.read_only_hint}
-        self.assertEqual(skriv, {"registrera_kvitto", "registrera_leverantorsfaktura", "ny_leverantor"})
+        self.assertEqual(skriv, {"registrera_kvitto", "registrera_leverantorsfaktura", "ny_leverantor", "rapportera_tid",
+                                 "skapa_fakturautkast", "hantera_bankhandelse", "ny_verifikation",
+                                 "ratta_verifikation"})
+        # det som användaren ska göra själv finns inte som verktyg
+        self.assertFalse(namn & {"bokfor_lon", "momsavrakning", "las_period", "slutfor_faktura", "makulera"})
         self.assertTrue(all(t.description for t in verktyg))
 
     def test_fel_blir_verktygsfel(self):

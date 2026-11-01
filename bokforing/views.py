@@ -290,48 +290,19 @@ def _visa_matchning(request, res, fel):
 @require_POST
 def bankpost_hantera(request, pk):
     from . import avstamning
-    from .models import Matchningsregel
 
     p = get_object_or_404(Bankpost, pk=pk)
     form = BankpostAtgardForm(request.POST)
     if not form.is_valid():
         messages.error(request, "Kunde inte hantera bankposten: " + _felen(form))
         return nasta_eller(request, "bank")
-    d, anv = form.cleaned_data, ANV(request)
-    atgard = d["atgard"]
+    d = form.cleaned_data
     try:
-        with transaction.atomic():
-            if atgard == "kundfaktura":
-                f = get_object_or_404(Faktura, pk=d["id"], status=Faktura.SKICKAD)
-                f.status, f.betaldatum = Faktura.BETALD, p.datum
-                f.save()
-                if not f.fran_visma and not f.verifikationer.filter(serie="F").exists():
-                    bok.bokfor_kundfaktura(f, anv)
-                p.verifikation = bok.bokfor_inbetalning(f, p.datum, p.konto_id, anv)
-            elif atgard == "levfaktura":
-                lf = get_object_or_404(Leverantorsfaktura, pk=d["id"], betaldatum__isnull=True)
-                p.verifikation = bok.bokfor_utbetalning(lf, p.datum, p.konto_id, anv)
-            elif atgard == "ver":
-                p.verifikation = get_object_or_404(Verifikation, pk=d["id"])
-            elif atgard == "konto":
-                motkonto = d["motkonto"].pk
-                p.verifikation = bok.bokfor(p.datum, d["text"] or p.text,
-                                            [(p.konto_id, p.belopp), (motkonto, -p.belopp)], "B", anv)
-                if d["spara_regel"]:
-                    regeltext = d["regeltext"].strip()
-                    Matchningsregel.objects.create(
-                        namn=regeltext, text_innehaller=regeltext, riktning="in" if p.belopp > 0 else "ut",
-                        motkonto_id=motkonto, automatisk=True)
-                    messages.info(request, "Regeln sparades och används automatiskt nästa gång.")
-            elif atgard == "regel":
-                p.verifikation = avstamning.bokfor_regel(p, get_object_or_404(Matchningsregel, pk=d["id"]), anv)
-            elif atgard == "ignorera":
-                p.ignorerad = True
-            elif atgard == "aterstall":
-                p.ignorerad = False
-                p.verifikation = None
-            p.save()
-        if p.verifikation_id and atgard != "ver":
+        p = avstamning.hantera(p, d["atgard"], d["id"], d["motkonto"], d["text"], d["spara_regel"],
+                               d["regeltext"], ANV(request))
+        if d["spara_regel"] and d["atgard"] == "konto":
+            messages.info(request, "Regeln sparades och används automatiskt nästa gång.")
+        if p.verifikation_id and d["atgard"] != "ver":
             messages.success(request, f"Bokfört som {p.verifikation.vernr}.")
     except bok.BokforingsFel as e:
         messages.error(request, f"Kunde inte bokföra: {e}")

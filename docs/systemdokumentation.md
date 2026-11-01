@@ -251,13 +251,19 @@ Från en verifikation finns länkar till faktura, bilaga, bankpost och rättelse
   uppdateringar. En uppdatering tas in först när alla automatiska tester gått igenom, och registreras som ny
   version i behandlingshistoriken vid nästa start.
 - **Behörighet:** endast inloggade användare. Lösenord sparas som hash och visas aldrig i historiken.
-- **Claude-koppling (MCP):** Claude i Claudes skrivbordsapp kan registrera kvitton och leverantörsfakturor
-  via en lokal MCP-server (`manage.py mcp`). Den startas av appen på samma dator och lyssnar inte på nätverket.
+- **Claude-koppling (MCP):** Claude i Claudes skrivbordsapp kan registrera kvitton och leverantörsfakturor,
+  rapportera tid, skapa fakturautkast, stämma av bankhändelser, bokföra manuella verifikationer (serie A) och
+  rätta verifikationer, via en lokal MCP-server (`manage.py mcp`). Den startas av appen på samma dator och
+  lyssnar inte på nätverket.
   - Underlag läses bara från inkorgen (`OneDrive\Kvitton inkorg`, ändras med `BITERO_INKORG_DIR`).
     Filnamn utanför inkorgen avvisas.
-  - Varje skrivande anrop (registrera kvitto, registrera leverantörsfaktura, ny leverantör) måste godkännas av
-    användaren i appen. Läsande anrop (inkorg, kontoplan, sök) är markerade som skrivskyddade.
-  - Bokföringen går genom samma behandlingsregel som manuell registrering (avsnitt 4). Underlaget sparas som
+  - Varje skrivande anrop måste godkännas av användaren i appen. Läsande anrop (inkorg, kontoplan, sök,
+    huvudbok, rapporter) är markerade som skrivskyddade.
+  - Claude kan inte bokföra lön, göra momsavräkning eller bokslut, låsa perioder, slutföra, skicka eller
+    makulera fakturor eller skapa betalfiler. Fakturautkast får nummer och bokförs först när användaren
+    slutför dem. Kundfakturor och löner kan inte rättas via Claude.
+  - Bokföringen går genom samma tjänstefunktioner och behandlingsregler som webbsidorna (avsnitt 4), med samma
+    kontroller: balans, låst period, aktiva konton och att en bankhändelse bara kan hanteras en gång. Underlaget sparas som
     bilaga till verifikationen och filen flyttas till `Bokförda\ÅÅÅÅ-MM\` i inkorgen.
   - Dubblettkontroll: samma fil (SHA-256) stoppas alltid. Samma datum, motpart och belopp stoppas om inte
     användaren uttryckligen godkänt en dubblett.
