@@ -3,18 +3,11 @@ from decimal import Decimal
 from django import forms
 from django.utils import timezone
 
-from config.formular import BeloppField
+from config.formular import BeloppField, DateInput
 from register.models import Konto, Leverantor
 
 from .bokslut import PERIODISERINGAR
 from .models import Leverantorsfaktura
-
-
-class DateInput(forms.DateInput):
-    input_type = "date"
-
-    def __init__(self, **kw):
-        super().__init__(format="%Y-%m-%d", **kw)
 
 
 class KontoField(forms.ModelChoiceField):

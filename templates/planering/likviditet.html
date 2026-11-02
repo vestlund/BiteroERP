@@ -26,10 +26,10 @@
 <table>
   <thead><tr><th>Vecka</th><th>Datum</th><th class="tal">In</th><th class="tal">Ut</th><th class="tal">Saldo</th><th>Vad</th></tr></thead>
   <tbody>{% for v in lp.veckor %}
-    <tr><td>v{{ v.vecka }}</td><td class="liten-text ingen-radbrytning">{{ v.fran|date:"j/n" }}–{{ v.till|date:"j/n" }}</td>
+    <tr><td>v{{ v.vecka }}</td><td class="liten-text ingen-radbrytning">{{ v.fran|date:"Y-m-d" }} – {{ v.till|date:"Y-m-d" }}</td>
       <td class="tal">{% if v.in %}{{ v.in|kr:0 }}{% endif %}</td><td class="tal">{% if v.ut %}{{ v.ut|kr:0 }}{% endif %}</td>
       <td class="tal {% if v.saldo < 0 %}negativ{% endif %}"><b>{{ v.saldo|kr:0 }}</b></td>
-      <td class="liten-text">{% for x in v.poster %}<div>{{ x.datum|date:"j/n" }} {{ x.kategori }}: {{ x.text }} <b>{{ x.belopp|kr:0 }}</b></div>{% endfor %}</td></tr>
+      <td class="liten-text">{% for x in v.poster %}<div>{{ x.datum|date:"Y-m-d" }} {{ x.kategori }}: {{ x.text }} <b>{{ x.belopp|kr:0 }}</b></div>{% endfor %}</td></tr>
   {% endfor %}</tbody>
 </table>
 {{ diagram|json_script:"ld" }}

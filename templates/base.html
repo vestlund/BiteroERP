@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="{% static 'app.css' %}">
   <link rel="stylesheet" href="{% static 'layout.css' %}">
   <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+  <script src="{% static 'datum.js' %}" defer></script>
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 {% with p=request.path %}

@@ -7,7 +7,7 @@
 <section class="kort">
   <div class="kort-rubrik"><h2>Bolagsskatt {{ prognos.ar|stringformat:"d" }}</h2></div>
   <table>
-    <tr><td>Resultat hittills (bokfört t.o.m. {{ idag|date:"j M" }})</td><td class="tal">{{ prognos.hittills|kr:0 }}</td></tr>
+    <tr><td>Resultat hittills (bokfört t.o.m. {{ idag|date:"Y-m-d" }})</td><td class="tal">{{ prognos.hittills|kr:0 }}</td></tr>
     <tr><td>Resten av året enligt {{ prognos.budget|default:"budget (saknas)" }}</td><td class="tal">{{ prognos.rest|kr:0 }}</td></tr>
     <tr class="summa"><td>Prognos resultat före skatt</td><td class="tal">{{ prognos.prognos|kr:0 }}</td></tr>
     <tr><td>Bolagsskatt 20,6 %</td><td class="tal">{{ prognos.skatt|kr:0 }}</td></tr>

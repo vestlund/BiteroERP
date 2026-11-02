@@ -1,16 +1,9 @@
 from django import forms
 
-from config.formular import BeloppField
+from config.formular import BeloppField, DateInput
 from register.models import Artikel, Kund
 
 from .models import Faktura, Fakturarad, Tidpost, Uppdrag
-
-
-class DateInput(forms.DateInput):
-    input_type = "date"
-
-    def __init__(self, **kwargs):
-        super().__init__(format="%Y-%m-%d", **kwargs)
 
 
 class UppdragForm(forms.ModelForm):

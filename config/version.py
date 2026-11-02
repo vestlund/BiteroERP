@@ -1,3 +1,3 @@
 """Programversion. Höjs vid varje leverans och står i docs/andringslogg.md."""
 
-VERSION = "2026.11.01-4"
+VERSION = "2026.11.02-1"

@@ -3,6 +3,15 @@
 Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
 fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
 
+## 2026.11.02-1
+
+- **Datum visas som ÅÅÅÅ-MM-DD** i hela programmet (`config/formats/sv/formats.py`), även tidrapport,
+  likviditetsprognos och viktiga datum.
+- Datumfälten visar ÅÅÅÅ-MM-DD oavsett webbläsarens språk (`static/datum.js`), med kalenderknapp.
+  20261102 skrivs om till 2026-11-02.
+- Programmet är alltid på svenska; webbläsarens språkinställning påverkar inte längre datum och texter.
+- De tre likadana datumwidgetarna är ersatta av en gemensam (`config.formular.DateInput`).
+
 ## 2026.11.01-4
 
 - Startkontrollen rapporterade felaktigt att verifikationer inte balanserade. SQLite summerar belopp som

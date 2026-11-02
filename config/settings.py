@@ -49,7 +49,6 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -92,7 +91,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
 ]
 
-LANGUAGE_CODE = "sv"
+LANGUAGE_CODE = "sv"  # alltid svenska, oavsett webbläsarens språk (ingen LocaleMiddleware)
+# Datum visas som ÅÅÅÅ-MM-DD överallt (config/formats/sv/formats.py)
+FORMAT_MODULE_PATH = ["config.formats"]
 TIME_ZONE = "Europe/Stockholm"
 USE_I18N = True
 USE_TZ = True

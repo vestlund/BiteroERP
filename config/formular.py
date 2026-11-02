@@ -7,6 +7,15 @@ from django.shortcuts import redirect
 from django.utils.http import url_has_allowed_host_and_scheme
 
 
+class DateInput(forms.DateInput):
+    """Datumfält. Värdet är alltid ÅÅÅÅ-MM-DD; static/datum.js visar det så oavsett webbläsarens språk."""
+
+    input_type = "date"
+
+    def __init__(self, attrs=None, format="%Y-%m-%d"):
+        super().__init__(attrs=attrs, format=format)
+
+
 class BeloppField(forms.DecimalField):
     """Decimaltal skrivna på svenska: '1 234,50' (vanligt eller hårt mellanslag, komma som decimaltecken)."""
 

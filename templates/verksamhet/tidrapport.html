@@ -14,7 +14,7 @@
 {% if rader %}
 <table class="grid-tid">
   <thead><tr><th>Uppdrag</th>
-    {% for d in dagar %}<th class="{% if d == idag %}idag{% elif d.weekday > 4 %}helg{% endif %}">{{ d|date:"D" }}<br><small>{{ d|date:"j/n" }}</small></th>{% endfor %}
+    {% for d in dagar %}<th class="{% if d == idag %}idag{% elif d.weekday > 4 %}helg{% endif %}">{{ d|date:"D" }}<br><small>{{ d|date:"Y-m-d" }}</small></th>{% endfor %}
     <th>Summa</th></tr></thead>
   <tbody>
   {% for r in rader %}
@@ -61,7 +61,7 @@
 <table>
   <thead><tr><th>Datum</th><th>Uppdrag</th><th class="tal">Timmar</th><th>Beskrivning</th><th>Status</th><th></th></tr></thead>
   <tbody>{% for p in poster %}
-    <tr><td>{{ p.datum|date:"D j/n" }}</td><td>{{ p.uppdrag.namn }}</td><td class="tal">{{ p.timmar|h }}</td>
+    <tr><td>{{ p.datum|date:"D Y-m-d" }}</td><td>{{ p.uppdrag.namn }}</td><td class="tal">{{ p.timmar|h }}</td>
       <td>{{ p.beskrivning }}</td>
       <td>{% if p.fakturerad %}<span class="status betald">fakturerad</span>{% elif not p.fakturerbar %}<span class="status">ej fakturerbar</span>{% endif %}</td>
       <td>{% if not p.fakturerad %}<a href="{% url 'tidpost_andra' p.pk %}">Ändra</a>{% endif %}</td></tr>

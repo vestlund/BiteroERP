@@ -10,7 +10,7 @@
   <thead><tr><th>Datum</th><th></th><th>Vad</th></tr></thead>
   <tbody>{% for f in frister %}
     <tr class="{% if f.passerad %}dimmad{% endif %}">
-      <td class="ingen-radbrytning"><b>{{ f.datum|date:"D j M Y" }}</b></td>
+      <td class="ingen-radbrytning"><b>{{ f.datum|date:"D Y-m-d" }}</b></td>
       <td class="liten-text ingen-radbrytning">{% if f.passerad %}passerad{% elif f.dagar == 0 %}<span class="status forfallen">i dag</span>{% elif f.dagar <= 14 %}<span class="status forfallen">om {{ f.dagar }} dagar</span>{% else %}om {{ f.dagar }} dagar{% endif %}</td>
       <td><a href="{% url f.url %}{{ f.query }}">{{ f.rubrik }}</a><br><small class="dimmad">{{ f.text }}</small></td></tr>
   {% endfor %}</tbody>

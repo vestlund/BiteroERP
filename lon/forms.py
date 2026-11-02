@@ -2,17 +2,10 @@ from decimal import Decimal
 
 from django import forms
 
-from config.formular import BeloppField
+from config.formular import BeloppField, DateInput
 from register.models import Konto
 
 from .models import Anstalld, Lonekorning, Lonerad, Lonespec
-
-
-class DateInput(forms.DateInput):
-    input_type = "date"
-
-    def __init__(self, **kw):
-        super().__init__(format="%Y-%m-%d", **kw)
 
 
 class AnstalldForm(forms.ModelForm):

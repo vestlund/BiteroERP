@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from bokforing.models import Inventarie, Matchningsregel
-from config.formular import nasta_eller
+from config.formular import DateInput, nasta_eller
 
 from .models import Artikel, Betalningsvillkor, Foretag, Konto, Kostnadsstalle, Kund, Leverantor
 
@@ -113,7 +113,7 @@ def _formklass(cfg):
             form.base_fields[namn].queryset = Konto.objects.filter(aktiv=True)
     for falt in form.base_fields.values():
         if isinstance(falt, forms.DateField):
-            falt.widget = forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
+            falt.widget = DateInput()
     return form
 
 
@@ -182,7 +182,7 @@ def foretag(request):
     f = Form(request.POST or None, instance=obj)
     for n in ("kundfordringskonto",):
         f.fields[n].queryset = Konto.objects.filter(aktiv=True)
-    f.fields["last_tom"].widget = forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
+    f.fields["last_tom"].widget = DateInput()
     if request.method == "POST" and f.is_valid():
         f.save()
         messages.success(request, "Företagsuppgifterna sparades.")
