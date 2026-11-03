@@ -3,6 +3,12 @@
 Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
 fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
 
+## 2026.11.03-3
+
+- Diagrammet under Lön eller utdelning har skala och titel på båda axlarna (tkr), rutnät, hjälplinjer för
+  full SGI och full pension, etikett för bästa fördelningen och en ruta med belopp när muspekaren hålls
+  över linjen.
+
 ## 2026.11.03-2
 
 - **Lön eller utdelning** ligger nu under Planering (gamla adressen pekar vidare).

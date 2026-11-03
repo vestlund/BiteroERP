@@ -93,18 +93,39 @@
 </div>
 {% endwith %}
 
-{% if r.diagram %}{% with d=r.diagram %}
-<article>
+{% if r.diagram %}{% with d=r.diagram b=r.bast %}
+<article class="lu-diagram">
   <h3 class="liten-rubrik">Netto till dig beroende på lön</h3>
-  <svg viewBox="0 0 {{ d.bredd }} {{ d.hojd }}" style="width:100%;max-width:{{ d.bredd }}px;height:auto" role="img" aria-label="Netto som funktion av lön">
-    <line x1="40" y1="{{ d.hojd|add:'-30' }}" x2="{{ d.bredd|add:'-20' }}" y2="{{ d.hojd|add:'-30' }}" stroke="#d0d5dd"/>
-    <polyline points="{{ d.linje }}" fill="none" stroke="#0f766e" stroke-width="2"/>
-    <circle cx="{{ d.bast_x }}" cy="{{ d.bast_y }}" r="5" fill="#ea580c"/>
-    <text x="40" y="{{ d.hojd|add:'-12' }}" font-size="11" fill="#6b7280">0 kr lön</text>
-    <text x="{{ d.bredd|add:'-20' }}" y="{{ d.hojd|add:'-12' }}" font-size="11" fill="#6b7280" text-anchor="end">{{ d.xmax|kr:0 }} kr lön</text>
-    <text x="44" y="18" font-size="11" fill="#6b7280">netto {{ d.ymax|kr:0 }}</text>
+  <p class="liten-text dimmad">Varje punkt på linjen är en lön per år med den utdelning som villkoren tillåter.
+    Håll muspekaren över linjen för att se beloppen.</p>
+  <div class="diagram-yta">
+  <svg viewBox="0 0 {{ d.bredd }} {{ d.hojd }}" role="img"
+       aria-label="Netto till dig som funktion av lön per år. Bäst vid {{ b.lon|kr:0 }} kr lön, netto {{ b.netto|kr:0 }} kr.">
+    {% for t in d.yticks %}
+      <line x1="{{ d.vanster }}" x2="{{ d.hoger_x }}" y1="{{ t.y }}" y2="{{ t.y }}" class="rutnat"/>
+      <text x="{{ d.vanster|add:'-8' }}" y="{{ t.y }}" class="skala" text-anchor="end" dominant-baseline="middle">{{ t.text }}</text>
+    {% endfor %}
+    {% for t in d.xticks %}
+      <line x1="{{ t.x }}" x2="{{ t.x }}" y1="{{ d.botten_y }}" y2="{{ d.botten_y }}" class="axel"/>
+      <text x="{{ t.x }}" y="{{ d.botten_y }}" dy="18" class="skala" text-anchor="middle">{{ t.text }}</text>
+    {% endfor %}
+    <line x1="{{ d.vanster }}" x2="{{ d.hoger_x }}" y1="{{ d.botten_y }}" y2="{{ d.botten_y }}" class="axel"/>
+    {% for m in d.markeringar %}
+      <line x1="{{ m.x }}" x2="{{ m.x }}" y1="{{ d.topp }}" y2="{{ d.botten_y }}" class="hjalplinje"/>
+      <text x="{{ m.x }}" y="{{ d.botten_y }}" dx="{{ m.dx }}" dy="-8" class="skala" text-anchor="{{ m.ankare }}">{{ m.text }}</text>
+    {% endfor %}
+    <polyline points="{{ d.linje }}" class="linje"/>
+    <circle cx="{{ d.bast_x }}" cy="{{ d.bast_y }}" r="6" class="bast"/>
+    <text x="{{ d.bast_text_x }}" y="{{ d.bast_text_y }}" class="bast-text" text-anchor="{{ d.bast_ankare }}">Bäst: {{ b.lon|kr:0 }} kr lön, {{ b.netto|kr:0 }} kr netto</text>
+    <text x="{{ d.mitt_x }}" y="{{ d.xtitel_y }}" class="axeltitel" text-anchor="middle">Lön per år</text>
+    <text transform="translate(14 {{ d.mitt_y }}) rotate(-90)" class="axeltitel" text-anchor="middle">Netto till dig per år</text>
+    <line class="sikte" x1="0" x2="0" y1="{{ d.topp }}" y2="{{ d.botten_y }}" visibility="hidden"/>
+    <circle class="sikte-punkt" r="5" visibility="hidden"/>
+    <rect class="traffyta" x="{{ d.vanster }}" y="{{ d.topp }}" width="{{ d.bredd_plot }}" height="{{ d.hojd_plot }}" fill="transparent"/>
   </svg>
-  <p class="liten-text dimmad">Den orange punkten är den bästa fördelningen.</p>
+  <div class="diagram-tips" hidden></div>
+  </div>
+  {{ d.punkter|json_script:"lu-punkter" }}
 </article>
 {% endwith %}{% endif %}
 
@@ -139,4 +160,35 @@
     saknar andra inkomster och att lönen är densamma varje år. Räntebaserat utrymme och tjänstepension ingår inte.
     Kalkylen är ett beslutsunderlag – stäm av med revisor eller rådgivare före större beslut.</p>
 </article>
+{% endblock %}
+
+{% block skript %}
+<script>
+(function () {
+  const yta = document.querySelector(".lu-diagram .diagram-yta");
+  const data = document.getElementById("lu-punkter");
+  if (!yta || !data) return;
+  const punkter = JSON.parse(data.textContent);
+  const svg = yta.querySelector("svg"), sikte = svg.querySelector(".sikte"), prick = svg.querySelector(".sikte-punkt");
+  const tips = yta.querySelector(".diagram-tips");
+  const kr = v => Math.round(v).toLocaleString("sv-SE") + " kr";
+  function visa(e) {
+    const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+    const x = p.matrixTransform(svg.getScreenCTM().inverse()).x;
+    let nar = punkter[0];
+    for (const q of punkter) if (Math.abs(q[0] - x) < Math.abs(nar[0] - x)) nar = q;
+    sikte.setAttribute("x1", nar[0]); sikte.setAttribute("x2", nar[0]); sikte.setAttribute("visibility", "visible");
+    prick.setAttribute("cx", nar[0]); prick.setAttribute("cy", nar[1]); prick.setAttribute("visibility", "visible");
+    tips.innerHTML = "<b>Lön " + kr(nar[2]) + "</b><br>Utdelning " + kr(nar[4]) + "<br>Netto till dig " + kr(nar[3]);
+    tips.hidden = false;
+    const r = yta.getBoundingClientRect(), skala = r.width / svg.viewBox.baseVal.width;
+    const vx = nar[0] * skala, vy = nar[1] * skala;
+    tips.style.left = (vx > r.width * 0.65 ? vx - tips.offsetWidth - 12 : vx + 12) + "px";
+    tips.style.top = Math.max(0, vy - tips.offsetHeight - 10) + "px";
+  }
+  function dolj() { sikte.setAttribute("visibility", "hidden"); prick.setAttribute("visibility", "hidden"); tips.hidden = true; }
+  const traff = svg.querySelector(".traffyta");
+  traff.addEventListener("mousemove", visa); traff.addEventListener("mouseleave", dolj);
+})();
+</script>
 {% endblock %}

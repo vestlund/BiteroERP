@@ -125,8 +125,11 @@ def lon_och_utdelning(request):
             max_inklusive_avgifter=bool(data.get("max_inkl_avgifter")), min_lon=Decimal(data.get("min_lon") or 0),
             bara_inom_gransbelopp=bool(data.get("bara_inom_gransbelopp")))
         bast, alla = lu.optimera(f)
+        rek_f = lu.rekommenderad_lon(idag.year, f.arbetsgivaravgift, f.kommunalskatt, f.avgift)
+        markeringar = [{"lon": rek_f["pension"]["lon"], "text": "Full pension"},
+                       {"lon": rek_f["sgi"]["lon"], "text": "Full SGI"}]
         resultat = {"bast": bast, "tabell": lu.jamforelse(f, bast, alla), "f": f,
-                    "diagram": _diagram(alla, bast) if alla else None}
+                    "diagram": _diagram(alla, bast, markeringar) if alla else None}
     # Rekommenderad lägsta lön (full SGI och allmän pension), med samma avgift och skatt som kalkylen
     grund = data or start
     rek = lu.rekommenderad_lon(idag.year, Decimal(grund["arbetsgivaravgift"]), Decimal(grund["kommunalskatt"]),
@@ -142,18 +145,80 @@ def lon_och_utdelning(request):
         "med_minimilon": q.urlencode(), "fritt_fg": fritt_eget_kapital(idag.year - 1)})
 
 
-def _diagram(alla, bast, bredd=640, hojd=220):
-    """Punkter för ett enkelt linjediagram: netto till ägaren som funktion av lönen."""
-    steg = max(1, len(alla) // 120)
-    urval = alla[::steg] + ([alla[-1]] if alla[-1] not in alla[::steg] else [])
-    xmax = max(float(a["lon"]) for a in urval) or 1
-    ymin = min(float(a["netto"]) for a in urval)
-    ymax = max(float(a["netto"]) for a in urval)
-    yspann = (ymax - ymin) or 1
+def _snygga_steg(spann, antal=5):
+    """Ett "jämnt" steg (1, 2, 2,5 eller 5 × 10^n) som ger ungefär `antal` skalsteg."""
+    import math
+    if spann <= 0:
+        return 1
+    rå = spann / antal
+    tiopot = 10 ** math.floor(math.log10(rå))
+    for f in (1, 2, 2.5, 5, 10):
+        if rå <= f * tiopot:
+            return f * tiopot
+    return 10 * tiopot
 
-    def xy(a):
-        return (round(40 + (bredd - 60) * float(a["lon"]) / xmax, 1),
-                round(10 + (hojd - 40) * (1 - (float(a["netto"]) - ymin) / yspann), 1))
-    bx, by = xy(bast)
-    return {"bredd": bredd, "hojd": hojd, "linje": " ".join(f"{x},{y}" for x, y in map(xy, urval)),
-            "bast_x": f"{bx}", "bast_y": f"{by}", "xmax": Decimal(xmax), "ymin": Decimal(ymin), "ymax": Decimal(ymax)}
+
+def _tkr(v):
+    """Skaletikett i tusental kronor: 850 000 -> '850 tkr', 1 200 000 -> '1 200 tkr'."""
+    return f"{round(v / 1000):,}".replace(",", " ") + " tkr"
+
+
+def _diagram(alla, bast, markeringar=(), bredd=760, hojd=320):
+    """Linjediagram: netto till ägaren (y) som funktion av lön per år (x), med skalor och hjälplinjer.
+
+    Alla koordinater lämnas som text så att mallen inte lokaliserar dem (decimalkomma i SVG fungerar inte).
+    """
+    import math
+
+    vanster, hoger, topp, botten = 72, 20, 18, 52
+    pb, ph = bredd - vanster - hoger, hojd - topp - botten
+    steg = max(1, len(alla) // 200)
+    urval = alla[::steg] + ([alla[-1]] if alla[-1] not in alla[::steg] else [])
+    xs = [float(a["lon"]) for a in urval]
+    ys = [float(a["netto"]) for a in urval]
+
+    xsteg = _snygga_steg(max(xs) or 1, antal=6)
+    xmax = math.ceil((max(xs) or 1) / xsteg) * xsteg
+    ysteg = _snygga_steg((max(ys) - min(ys)) or max(ys) or 1)
+    ymin = math.floor(min(ys) / ysteg) * ysteg
+    ymax = math.ceil(max(ys) / ysteg) * ysteg
+    if ymax == ymin:
+        ymax = ymin + ysteg
+
+    def x(v):
+        return vanster + pb * v / xmax
+
+    def y(v):
+        return topp + ph * (1 - (v - ymin) / (ymax - ymin))
+
+    def f(v):
+        return f"{v:.1f}"
+
+    xticks = [{"x": f(x(v)), "text": _tkr(v)} for v in _intervall(0, xmax, xsteg)]
+    yticks = [{"y": f(y(v)), "text": _tkr(v)} for v in _intervall(ymin, ymax, ysteg)]
+    # Hjälplinjer sorteras på lön; den lägre får texten till vänster om linjen, den högre till höger,
+    # så att närliggande linjer (SGI och pension) inte krockar.
+    synliga = sorted((m for m in markeringar if 0 < float(m["lon"]) <= xmax), key=lambda m: float(m["lon"]))
+    linjer = [{"x": f(x(float(m["lon"]))), "text": m["text"],
+               "ankare": "end" if i < len(synliga) - 1 else "start", "dx": "-4" if i < len(synliga) - 1 else "4"}
+              for i, m in enumerate(synliga)]
+    bx, by = x(float(bast["lon"])), y(float(bast["netto"]))
+    punkter = [[round(x(a), 1), round(y(b), 1), int(a), int(b), int(u["utdelning"])]
+               for a, b, u in zip(xs, ys, urval)]
+    return {
+        "bredd": str(bredd), "hojd": str(hojd), "vanster": str(vanster), "hoger_x": f(vanster + pb),
+        "topp": str(topp), "botten_y": f(topp + ph), "mitt_y": f(topp + ph / 2), "mitt_x": f(vanster + pb / 2),
+        "xtitel_y": f(hojd - 8), "linje": " ".join(f"{p[0]},{p[1]}" for p in punkter),
+        "xticks": xticks, "yticks": yticks, "markeringar": linjer, "bast_x": f(bx), "bast_y": f(by),
+        "bast_text_x": f(min(bx + 8, vanster + pb - 4)), "bast_text_y": f(max(by - 10, topp + 12)),
+        "bast_ankare": "end" if bx > vanster + pb * 0.7 else "start",
+        "bredd_plot": f(pb), "hojd_plot": f(ph), "punkter": punkter,
+    }
+
+
+def _intervall(fran, till, steg):
+    v, ut = fran, []
+    while v <= till + steg / 1000:
+        ut.append(v)
+        v += steg
+    return ut

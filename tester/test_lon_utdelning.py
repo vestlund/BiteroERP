@@ -102,6 +102,10 @@ class Sida(TestCase):
                 "begravningsavgift": "0,25", "arbetsgivaravgift": "31,42", "sparat": "0"}
         r = self.client.get(url, data)
         self.assertContains(r, "Bästa fördelningen")
+        # diagrammet har skalor, axeltitlar och hjälplinjer, och koordinater utan decimalkomma
+        for text in ("Lön per år", "Netto till dig per år", "200 tkr", "Full pension", "Full SGI", "Bäst:"):
+            self.assertContains(r, text)
+        self.assertNotRegex(r.content.decode(), r'(cx|x1|points)="[0-9]+,[0-9]')
         self.assertContains(r, "Jämför")
         r = self.client.post(url, {**data, "spara": "1", "max_inkl_avgifter": "on"})
         self.assertEqual(r.status_code, 302)
