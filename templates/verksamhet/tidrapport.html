@@ -1,73 +1,60 @@
 {% extends "base.html" %}{% load kr %}
+{% block titel %}Tidrapport {{ manad|date:"Y-m" }}{% endblock %}
 {% block innehall %}
 <div class="rubrikrad">
-  <h1>Tidrapport – vecka {{ veckonummer }}</h1>
+  <h1>Tidrapport – {{ manad|date:"F Y"|capfirst }}</h1>
   <div class="knappar">
-    <a href="?vecka={{ foregaende|date:'Y-m-d' }}" role="button" class="outline secondary liten">← Föregående</a>
-    <a href="?" role="button" class="outline secondary liten">Denna vecka</a>
-    <a href="?vecka={{ nasta|date:'Y-m-d' }}" role="button" class="outline secondary liten">Nästa →</a>
+    <a href="?manad={{ foregaende|date:'Y-m' }}" role="button" class="outline secondary liten">← Föregående</a>
+    <a href="?" role="button" class="outline secondary liten">Denna månad</a>
+    <a href="?manad={{ nasta|date:'Y-m' }}" role="button" class="outline secondary liten">Nästa →</a>
     <a href="{% url 'tid_export_csv' %}" class="liten">Exportera CSV</a>
   </div>
 </div>
 
 <article>
-{% if rader %}
-<table class="grid-tid">
-  <thead><tr><th>Uppdrag</th>
-    {% for d in dagar %}<th class="{% if d == idag %}idag{% elif d.weekday > 4 %}helg{% endif %}">{{ d|date:"D" }}<br><small>{{ d|date:"Y-m-d" }}</small></th>{% endfor %}
+{% if uppdrag %}
+<div class="tabell-rull">
+<table class="grid-tid manad">
+  <thead><tr><th>Dag</th>
+    {% for u in uppdrag %}<th><a href="{{ u.get_absolute_url }}">{{ u.namn }}</a><br><small class="dimmad">{{ u.kund.namn }}</small></th>{% endfor %}
     <th>Summa</th></tr></thead>
   <tbody>
   {% for r in rader %}
-    <tr>
-      <td><a href="{{ r.uppdrag.get_absolute_url }}">{{ r.uppdrag.namn }}</a><br><small class="dimmad">{{ r.uppdrag.kund.namn }}</small></td>
+    <tr class="{% if r.datum == idag %}idag{% elif r.datum.weekday > 4 %}helg{% endif %}">
+      <td class="dag">{{ r.datum|date:"Y-m-d" }} <span class="dimmad">{{ r.datum|date:"D" }}</span></td>
       {% for c in r.celler %}
-      <td class="{% if c.datum == idag %}idag{% elif c.datum.weekday > 4 %}helg{% endif %}">
-        {% if c.last %}<span class="last" data-h="{{ c.timmar }}" title="Fakturerad eller flera poster – ändra i listan nedan">{{ c.timmar|h }} 🔒</span>
+      <td>
+        {% if c.fakturerad %}
+          <span class="last" data-h="{{ c.timmar }}" title="Fakturerad{% if c.beskrivning %}: {{ c.beskrivning }}{% endif %}">{{ c.timmar|h }} 🔒</span>
         {% else %}
-        <input type="text" inputmode="decimal" name="timmar" value="{{ c.timmar|h }}"
-               hx-post="{% url 'tid_cell' %}" hx-trigger="change" hx-swap="none"
-               hx-vals='{"uppdrag": "{{ r.uppdrag.pk }}", "datum": "{{ c.datum|date:'Y-m-d' }}"}'>
+        <form class="tidcell" hx-post="{% url 'tid_cell' %}" hx-trigger="change, submit" hx-swap="none"
+             hx-vals='{"uppdrag": "{{ c.uppdrag.pk }}", "datum": "{{ c.datum|date:'Y-m-d' }}", "detaljer": "on"}'>
+          <span class="rad">
+            <input type="text" inputmode="decimal" name="timmar" value="{{ c.timmar|h }}" aria-label="Timmar {{ c.uppdrag.namn }} {{ c.datum|date:'Y-m-d' }}">
+            <button type="button" class="plus{% if c.beskrivning or not c.fakturerbar %} har{% endif %}"
+                    title="{% if c.beskrivning %}{{ c.beskrivning }}{% else %}Lägg till text på fakturan{% endif %}" aria-label="Text på fakturan">{% if c.beskrivning or not c.fakturerbar %}✎{% else %}+{% endif %}</button>
+          </span>
+          <span class="kommentar" hidden>
+            <input type="text" name="beskrivning" value="{{ c.beskrivning }}" maxlength="300" placeholder="Text på fakturan">
+            <label class="liten-text"><input type="checkbox" name="fakturerbar" {% if c.fakturerbar %}checked{% endif %}> Fakturerbar</label>
+          </span>
+        </form>
         {% endif %}
       </td>
       {% endfor %}
       <td><strong class="radsumma">{{ r.summa|h }}</strong></td>
     </tr>
   {% endfor %}
-  <tr class="summa"><td>Summa</td>{% for s in dagsummor %}<td class="dagsumma">{{ s|h }}</td>{% endfor %}<td id="veckosumma">{{ veckosumma|h }}</td></tr>
   </tbody>
+  <tfoot><tr class="summa"><td>Summa</td>{% for s in kolumnsummor %}<td class="kolumnsumma">{{ s|h }}</td>{% endfor %}<td id="manadssumma">{{ manadssumma|h }}</td></tr></tfoot>
 </table>
-<p class="hjalp">Skriv timmar direkt i rutorna (t.ex. 7,5) – sparas när du lämnar rutan. Vill du ha en beskrivning, använd formuläret nedan.</p>
+</div>
+<p class="hjalp">Skriv timmar i rutorna (t.ex. 7,5). De sparas när du lämnar rutan. Klicka <b>+</b> för att lägga till en text
+  som syns på fakturan för den dagen, eller för att markera tiden som ej fakturerbar. 🔒 = fakturerad tid, som inte kan ändras.</p>
 {% else %}
 <p>Du har inga aktiva uppdrag. <a href="{% url 'uppdrag_nytt' %}">Lägg upp ett uppdrag</a> först.</p>
 {% endif %}
 </article>
-
-<h2>Lägg till tid med beskrivning</h2>
-<article>
-<form method="post">{% csrf_token %}
-  <div class="formgrid">
-    <label>{{ form.uppdrag.label }}{{ form.uppdrag }}{{ form.uppdrag.errors }}</label>
-    <label>{{ form.datum.label }}{{ form.datum }}{{ form.datum.errors }}</label>
-    <label>{{ form.timmar.label }}{{ form.timmar }}{{ form.timmar.errors }}</label>
-    <label class="bred">{{ form.beskrivning.label }}{{ form.beskrivning }}</label>
-    <label>{{ form.fakturerbar }} {{ form.fakturerbar.label }}</label>
-  </div>
-  <button type="submit">Spara tid</button>
-</form>
-</article>
-
-{% if poster %}
-<h2>Poster denna vecka</h2>
-<table>
-  <thead><tr><th>Datum</th><th>Uppdrag</th><th class="tal">Timmar</th><th>Beskrivning</th><th>Status</th><th></th></tr></thead>
-  <tbody>{% for p in poster %}
-    <tr><td>{{ p.datum|date:"D Y-m-d" }}</td><td>{{ p.uppdrag.namn }}</td><td class="tal">{{ p.timmar|h }}</td>
-      <td>{{ p.beskrivning }}</td>
-      <td>{% if p.fakturerad %}<span class="status betald">fakturerad</span>{% elif not p.fakturerbar %}<span class="status">ej fakturerbar</span>{% endif %}</td>
-      <td>{% if not p.fakturerad %}<a href="{% url 'tidpost_andra' p.pk %}">Ändra</a>{% endif %}</td></tr>
-  {% endfor %}</tbody>
-</table>
-{% endif %}
 {% endblock %}
 
 {% block skript %}
@@ -75,25 +62,43 @@
 const tal = v => parseFloat(String(v || "0").replace(",", ".")) || 0;
 const fmt = v => v ? String(Math.round(v * 100) / 100).replace(".", ",") : "";
 function summera() {
-  const rader = [...document.querySelectorAll(".grid-tid tbody tr:not(.summa)")];
-  const dag = Array(7).fill(0);
+  const rader = [...document.querySelectorAll(".grid-tid tbody tr")];
+  const kol = [];
   rader.forEach(tr => {
     let s = 0;
-    [...tr.querySelectorAll("td")].slice(1, 8).forEach((td, i) => {
-      const inp = td.querySelector("input"), last = td.querySelector(".last");
+    [...tr.querySelectorAll("td")].slice(1, -1).forEach((td, i) => {
+      const inp = td.querySelector("input[name=timmar]"), last = td.querySelector(".last");
       const v = inp ? tal(inp.value) : (last ? tal(last.dataset.h) : 0);
-      s += v; dag[i] += v;
+      s += v; kol[i] = (kol[i] || 0) + v;
     });
     tr.querySelector(".radsumma").textContent = fmt(s);
   });
-  document.querySelectorAll(".dagsumma").forEach((td, i) => td.textContent = fmt(dag[i]));
-  document.getElementById("veckosumma").textContent = fmt(dag.reduce((a, b) => a + b, 0));
+  document.querySelectorAll(".kolumnsumma").forEach((td, i) => td.textContent = fmt(kol[i] || 0));
+  document.getElementById("manadssumma").textContent = fmt(kol.reduce((a, b) => a + b, 0));
 }
+document.querySelectorAll(".tidcell .plus").forEach(knapp => knapp.addEventListener("click", () => {
+  const ruta = knapp.closest(".tidcell").querySelector(".kommentar");
+  const visa = ruta.hidden;
+  document.querySelectorAll(".tidcell .kommentar").forEach(k => k.hidden = true);
+  ruta.hidden = !visa;
+  if (visa) ruta.querySelector("input[name=beskrivning]").focus();
+}));
+// Stäng rutan med Esc eller klick utanför
+document.addEventListener("keydown", e => { if (e.key === "Escape") document.querySelectorAll(".tidcell .kommentar").forEach(k => k.hidden = true); });
+document.addEventListener("click", e => { if (!e.target.closest(".tidcell")) document.querySelectorAll(".tidcell .kommentar").forEach(k => k.hidden = true); });
 document.body.addEventListener("htmx:afterRequest", e => {
-  const el = e.detail.elt;
-  el.classList.remove("fel", "sparad");
-  if (e.detail.successful) { el.classList.add("sparad"); summera(); }
-  else { el.classList.add("fel"); alert(e.detail.xhr.responseText || "Kunde inte spara"); }
+  const cell = e.detail.elt, tim = cell.querySelector("input[name=timmar]");
+  if (!tim) return;
+  tim.classList.remove("fel", "sparad");
+  if (e.detail.successful) {
+    tim.classList.add("sparad"); summera();
+    const text = cell.querySelector("input[name=beskrivning]").value.trim();
+    const ejFakt = !cell.querySelector("input[name=fakturerbar]").checked;
+    const plus = cell.querySelector(".plus");
+    plus.classList.toggle("har", !!text || ejFakt);
+    plus.textContent = text || ejFakt ? "✎" : "+";
+    plus.title = text || "Lägg till text på fakturan";
+  } else { tim.classList.add("fel"); alert(e.detail.xhr.responseText || "Kunde inte spara"); }
 });
 </script>
 {% endblock %}

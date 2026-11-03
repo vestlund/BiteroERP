@@ -3,6 +3,13 @@
 Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
 fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
 
+## 2026.11.03-1
+
+- **Tidrapporten visar hela månaden:** en rad per dag och en kolumn per uppdrag, med summor per dag, uppdrag
+  och månad. Timmar sparas direkt i rutan. Plustecknet bredvid en ruta öppnar en text till fakturan för
+  dagen och en ruta för ej fakturerbar tid. Formuläret och listan under rutnätet är borttagna.
+- Äldre dagar med flera tidposter för samma uppdrag slås ihop till en när rutan ändras. Fakturerad tid är låst.
+
 ## 2026.11.02-1
 
 - **Datum visas som ÅÅÅÅ-MM-DD** i hela programmet (`config/formats/sv/formats.py`), även tidrapport,

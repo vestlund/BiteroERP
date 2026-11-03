@@ -28,7 +28,8 @@ Systemet lyssnar bara på din egen dator (127.0.0.1) – ingen annan kommer åt 
 ## Arbetsflöde
 
 1. **Uppdrag → Nytt uppdrag**: välj kund och artikel (styr pris, konto och moms). Du kan ange ett eget timpris.
-2. **Tidrapport**: skriv timmar direkt i veckorutnätet, eller använd formuläret om du vill ha en beskrivning.
+2. **Tidrapport**: hela månaden med en rad per dag och en kolumn per uppdrag. Skriv timmar direkt i rutorna.
+   Klicka **+** bredvid en ruta för att lägga till en text på fakturan för den dagen eller markera tiden som ej fakturerbar.
 3. **Fakturor → Fakturera tid**: välj kund och "tid till och med". Ett utkast skapas med en rad per uppdrag
    (eller en per tidpost) och tiden markeras som fakturerad.
 4. Kontrollera utkastet, lägg till rader vid behov och klicka **Slutför och ge nummer**. Då låses fakturan.

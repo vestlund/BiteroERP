@@ -129,6 +129,46 @@ class Tidrutan(Grund):
         self.cell("")
         self.assertFalse(Tidpost.objects.exists())
 
+    def test_text_till_fakturan_och_ej_fakturerbar(self):
+        self.cell("8")
+        r = self.client.post(reverse("tid_cell"), {"uppdrag": self.u.pk, "datum": "2026-03-02", "timmar": "8",
+                                                   "beskrivning": " Workshop med kund ", "fakturerbar": "on",
+                                                   "detaljer": "on"})
+        self.assertEqual(r.status_code, 204)
+        tp = Tidpost.objects.get()
+        self.assertEqual((tp.beskrivning, tp.fakturerbar), ("Workshop med kund", True))
+        self.client.post(reverse("tid_cell"), {"uppdrag": self.u.pk, "datum": "2026-03-02", "timmar": "8",
+                                               "beskrivning": "Intern", "detaljer": "on"})
+        self.assertFalse(Tidpost.objects.get().fakturerbar)
+        self.cell("6")  # utan detaljer ändras bara timmarna
+        tp = Tidpost.objects.get()
+        self.assertEqual((tp.timmar, tp.beskrivning, tp.fakturerbar), (d("6"), "Intern", False))
+
+    def test_flera_poster_slas_ihop_och_fakturerad_last(self):
+        Tidpost.objects.create(uppdrag=self.u, datum=datum("2026-03-02"), timmar=d("2"), beskrivning="A")
+        Tidpost.objects.create(uppdrag=self.u, datum=datum("2026-03-02"), timmar=d("3"), beskrivning="B")
+        self.assertEqual(self.cell("5").status_code, 204)
+        tp = Tidpost.objects.get()
+        self.assertEqual((tp.timmar, tp.beskrivning), (d("5"), "A / B"))
+        from .grund import faktura
+        f = faktura(self.kund)
+        Tidpost.objects.filter(pk=tp.pk).update(fakturarad=f.rader.first())
+        self.assertEqual(self.cell("1").status_code, 400)
+        self.assertEqual(Tidpost.objects.get().timmar, d("5"))
+
+    def test_manadsvy(self):
+        Tidpost.objects.create(uppdrag=self.u, datum=datum("2026-02-27"), timmar=d("7.5"), beskrivning="Workshop")
+        r = self.client.get(reverse("tidrapport") + "?manad=2026-02")
+        self.assertContains(r, "2026-02-01")
+        self.assertContains(r, "2026-02-28")
+        self.assertNotContains(r, "2026-03-01")
+        self.assertContains(r, "Rådgivning")
+        self.assertContains(r, 'value="Workshop"')
+        self.assertNotContains(r, "Lägg till tid med beskrivning")
+        # äldre länkar med ?vecka= visar den veckans månad, ogiltigt värde visar innevarande månad
+        self.assertContains(self.client.get(reverse("tidrapport") + "?vecka=2026-02-23"), "2026-02-28")
+        self.assertEqual(self.client.get(reverse("tidrapport") + "?manad=x").status_code, 200)
+
     def test_ogiltiga_varden(self):
         for timmar, dag in [("25", "2026-03-02"), ("-1", "2026-03-02"), ("åtta", "2026-03-02"), ("8", "x")]:
             with self.subTest(timmar=timmar, dag=dag):

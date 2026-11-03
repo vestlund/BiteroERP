@@ -67,12 +67,18 @@ class ExportForm(forms.Form):
 
 
 class TidcellForm(forms.Form):
-    """En ruta i veckorutnätet: timmar för ett uppdrag en dag."""
+    """En ruta i tidrapporten: timmar (och ev. text till fakturan) för ett uppdrag en dag.
+
+    `detaljer` skickas när rutans text och fakturerbar-ruta finns med; annars ändras bara timmarna.
+    """
 
     uppdrag = forms.ModelChoiceField(Uppdrag.objects.all())
     datum = forms.DateField()
     timmar = BeloppField(min_value=0, max_value=24, max_digits=5, tomt_som_noll=True,
                      error_messages={"min_value": "Timmar måste vara 0–24", "max_value": "Timmar måste vara 0–24"})
+    beskrivning = forms.CharField(max_length=300, required=False)
+    fakturerbar = forms.BooleanField(required=False)
+    detaljer = forms.BooleanField(required=False)
 
 
 class PaminnelseForm(forms.Form):

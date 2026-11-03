@@ -186,7 +186,7 @@ def rapportera_tid(uppdrag_id, datum, timmar, beskrivning="", fakturerbar=True):
     return {"sparad": f"{tp.timmar} h {tp.datum} på {tp.uppdrag.namn} ({tp.uppdrag.kund.namn})",
             "totalt_samma_dag": str(dag_innan + tp.timmar),
             "obs": f"Det fanns redan {sum(p.timmar for p in samma)} h på samma uppdrag och dag." if samma else None,
-            "lank": f"{WEBB}/tid/?vecka={tp.datum}"}
+            "lank": f"{WEBB}/tid/?manad={tp.datum:%Y-%m}"}
 
 
 def skapa_fakturautkast(kund_nummer, till_och_med, fakturadatum=None, en_rad_per_post=False):

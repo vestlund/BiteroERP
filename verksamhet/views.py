@@ -1,5 +1,6 @@
 import csv
 import datetime as dt
+from collections import defaultdict
 from decimal import Decimal
 
 from django.contrib import messages
@@ -7,6 +8,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -31,77 +33,85 @@ from .oversikt import oversikt  # noqa: E402,F401
 
 # ---------------------------------------------------------------- tidrapport
 
-def _vecka_start(request):
+def _manad_start(request):
+    """Första dagen i månaden från ?manad=ÅÅÅÅ-MM (eller ?vecka=ÅÅÅÅ-MM-DD från äldre länkar)."""
+    idag = timezone.localdate()
+    v = request.GET.get("manad") or request.GET.get("vecka") or ""
     try:
-        d = dt.date.fromisoformat(request.GET.get("vecka", ""))
+        d = dt.date.fromisoformat(v[:7] + "-01") if len(v) >= 7 else idag
     except ValueError:
-        d = timezone.localdate()
-    return d - dt.timedelta(days=d.weekday())
+        d = idag
+    return d.replace(day=1)
+
+
+def tid_lank(datum):
+    return f"{reverse('tidrapport')}?manad={datum:%Y-%m}"
 
 
 def tidrapport(request):
-    start = _vecka_start(request)
-    dagar = [start + dt.timedelta(days=i) for i in range(7)]
-    poster = Tidpost.objects.filter(datum__range=(dagar[0], dagar[-1])).select_related("uppdrag__kund")
+    """Månadens tid: en rad per dag, en kolumn per uppdrag. Rutorna sparas direkt (tid_cell)."""
+    start = _manad_start(request)
+    nasta = (start + dt.timedelta(days=32)).replace(day=1)
+    dagar = [start + dt.timedelta(days=i) for i in range((nasta - start).days)]
+    poster = list(Tidpost.objects.filter(datum__range=(dagar[0], dagar[-1])).select_related("uppdrag__kund"))
 
-    if request.method == "POST":
-        form = TidpostForm(request.POST)
-        if form.is_valid():
-            tp = form.save()
-            messages.success(request, f"Sparade {tp.timmar} h på {tp.uppdrag}.")
-            return redirect(f"{request.path}?vecka={tp.datum.isoformat()}")
-    else:
-        senaste = Tidpost.objects.filter(uppdrag__aktiv=True).order_by("-skapad").first()
-        aktiva = Uppdrag.objects.filter(aktiv=True)
-        forval = senaste.uppdrag_id if senaste else (aktiva.first().pk if aktiva.count() == 1 else None)
-        form = TidpostForm(initial={"uppdrag": forval,
-                                    "datum": timezone.localdate() if timezone.localdate() in dagar else dagar[0]})
+    uppdrag_ids = set(Uppdrag.objects.filter(aktiv=True).values_list("id", flat=True)) | {p.uppdrag_id for p in poster}
+    uppdrag = list(Uppdrag.objects.filter(id__in=uppdrag_ids).select_related("kund").order_by("kund__namn", "namn"))
+    per_cell = defaultdict(list)
+    for p in poster:
+        per_cell[(p.datum, p.uppdrag_id)].append(p)
 
-    # Rutnät: aktiva uppdrag + uppdrag med tid den här veckan
-    uppdrag_ids = set(Uppdrag.objects.filter(aktiv=True).values_list("id", flat=True))
-    uppdrag_ids |= {p.uppdrag_id for p in poster}
     rader = []
-    for u in Uppdrag.objects.filter(id__in=uppdrag_ids).select_related("kund"):
+    for d in dagar:
         celler = []
-        for d in dagar:
-            pd = [p for p in poster if p.uppdrag_id == u.id and p.datum == d]
+        for u in uppdrag:
+            pd = per_cell[(d, u.id)]
             celler.append({
-                "datum": d,
-                "timmar": sum((p.timmar for p in pd), Decimal(0)),
-                "last": any(p.fakturerad for p in pd) or len(pd) > 1,
+                "uppdrag": u, "datum": d, "timmar": sum((p.timmar for p in pd), Decimal(0)),
+                "beskrivning": " / ".join(p.beskrivning for p in pd if p.beskrivning),
+                "fakturerbar": all(p.fakturerbar for p in pd) if pd else True,
+                "fakturerad": any(p.fakturerad for p in pd),
             })
-        rader.append({"uppdrag": u, "celler": celler, "summa": sum(c["timmar"] for c in celler)})
-    dagsummor = [sum((p.timmar for p in poster if p.datum == d), Decimal(0)) for d in dagar]
+        rader.append({"datum": d, "celler": celler, "summa": sum(c["timmar"] for c in celler)})
+    kolumnsummor = [sum((p.timmar for p in poster if p.uppdrag_id == u.id), Decimal(0)) for u in uppdrag]
 
     return render(request, "verksamhet/tidrapport.html", {
-        "form": form, "dagar": dagar, "rader": rader, "dagsummor": dagsummor,
-        "veckosumma": sum(dagsummor), "poster": poster,
-        "veckonummer": start.isocalendar()[1],
-        "foregaende": start - dt.timedelta(days=7), "nasta": start + dt.timedelta(days=7),
+        "rader": rader, "uppdrag": uppdrag, "kolumnsummor": kolumnsummor, "manadssumma": sum(kolumnsummor),
+        "manad": start, "foregaende": (start - dt.timedelta(days=1)).replace(day=1), "nasta": nasta,
         "idag": timezone.localdate(),
     })
 
 
 @require_POST
 def tid_cell(request):
-    """HTMX: sätter antal timmar för ett uppdrag en viss dag (från veckorutnätet)."""
+    """HTMX: sätter timmar, och från rutans tillägg även text till fakturan, för ett uppdrag en dag."""
     form = TidcellForm(request.POST)
     if not form.is_valid():
         return HttpResponseBadRequest(" ".join(e for fel in form.errors.values() for e in fel))
-    uppdrag, datum, timmar = (form.cleaned_data[k] for k in ("uppdrag", "datum", "timmar"))
+    d = form.cleaned_data
+    uppdrag, datum, timmar = d["uppdrag"], d["datum"], d["timmar"]
 
-    befintliga = Tidpost.objects.filter(uppdrag=uppdrag, datum=datum)
-    if befintliga.filter(fakturarad__isnull=False).exists() or befintliga.count() > 1:
-        return HttpResponseBadRequest("Dagen har fakturerad tid eller flera poster – ändra i listan")
-    post = befintliga.first()
-    if timmar == 0:
-        if post:
-            post.delete()
-    elif post:
+    befintliga = list(Tidpost.objects.filter(uppdrag=uppdrag, datum=datum).order_by("id"))
+    if any(p.fakturarad_id for p in befintliga):
+        return HttpResponseBadRequest("Tiden den dagen är fakturerad och kan inte ändras.")
+    with transaction.atomic():
+        post, ovriga = (befintliga[0], befintliga[1:]) if befintliga else (None, [])
+        if ovriga:  # äldre dagar med flera poster slås ihop till en
+            text = " / ".join(p.beskrivning for p in befintliga if p.beskrivning)
+            for p in ovriga:
+                p.delete()
+            post.beskrivning = text
+        if timmar == 0:
+            if post:
+                post.delete()
+            return HttpResponse(status=204)
+        if not post:
+            post = Tidpost(uppdrag=uppdrag, datum=datum)
         post.timmar = timmar
-        post.save(update_fields=["timmar"])
-    else:
-        Tidpost.objects.create(uppdrag=uppdrag, datum=datum, timmar=timmar)
+        if d["detaljer"]:
+            post.beskrivning = d["beskrivning"].strip()
+            post.fakturerbar = d["fakturerbar"]
+        post.save()
     return HttpResponse(status=204)
 
 
@@ -109,16 +119,16 @@ def tidpost_andra(request, pk):
     tp = get_object_or_404(Tidpost, pk=pk)
     if tp.fakturerad:
         messages.error(request, "Tidposten är fakturerad och kan inte ändras.")
-        return redirect(f"/tid/?vecka={tp.datum.isoformat()}")
+        return redirect(tid_lank(tp.datum))
     form = TidpostForm(request.POST or None, instance=tp)
     if request.method == "POST":
         if "radera" in request.POST:
             tp.delete()
             messages.success(request, "Tidposten raderades.")
-            return redirect(f"/tid/?vecka={tp.datum.isoformat()}")
+            return redirect(tid_lank(tp.datum))
         if form.is_valid():
             form.save()
-            return redirect(f"/tid/?vecka={tp.datum.isoformat()}")
+            return redirect(tid_lank(tp.datum))
     return render(request, "verksamhet/form.html", {"form": form, "rubrik": "Ändra tidpost", "radera": True})
 
 
