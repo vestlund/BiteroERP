@@ -3,6 +3,12 @@
 Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
 fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
 
+## 2026.11.03-5
+
+- Lön eller utdelning: lägsta lön kan väljas i en lista, full SGI (592 000 kr/år) eller full allmän pension
+  (673 038 kr/år), eller skrivas in som eget belopp. Claude-verktyget tar min_lon "sgi" eller "pension".
+- Jämför-tabellen visar lön och netto både per år och per månad.
+
 ## 2026.11.03-4
 
 - Lön eller utdelning: utdelningen begränsas alltid till det gränsbelopp som lönen i kalkylen ger

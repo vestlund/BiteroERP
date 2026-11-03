@@ -134,14 +134,17 @@
   <h3 class="liten-rubrik">Jämför</h3>
   <p class="liten-text dimmad">Utdelningen är max det gränsbelopp som lönen på raden ger (grundbelopp + lönebaserat
     utrymme), utan sparat utrymme. Den kan bli lägre om vinsten eller maxbeloppet inte räcker.</p>
+  <div class="tabell-rull">
   <table>
-    <thead><tr><th class="tal">Lön</th><th class="tal">Utdelning</th><th class="tal">Gränsbelopp</th>
-      <th class="tal">Netto till dig</th><th class="tal">Kvar i bolaget</th><th class="tal">Skatter och avgifter</th></tr></thead>
+    <thead><tr><th class="tal">Lön per år</th><th class="tal">Lön per månad</th><th class="tal">Utdelning</th>
+      <th class="tal">Gränsbelopp</th><th class="tal">Netto per år</th><th class="tal">Netto per månad</th><th class="tal">Kvar i bolaget</th><th class="tal">Skatter och avgifter</th></tr></thead>
     <tbody>{% for a in r.tabell %}
-      <tr{% if a == r.bast %} class="summa"{% endif %}><td class="tal">{{ a.lon|kr:0 }}</td><td class="tal">{{ a.utdelning|kr:0 }}</td>
-        <td class="tal">{{ a.gransbelopp.summa|kr:0 }}</td><td class="tal">{{ a.netto|kr:0 }}</td>
+      <tr{% if a == r.bast %} class="summa"{% endif %}><td class="tal">{{ a.lon|kr:0 }}</td><td class="tal">{{ a.lon_manad|kr:0 }}</td>
+        <td class="tal">{{ a.utdelning|kr:0 }}</td><td class="tal">{{ a.gransbelopp.summa|kr:0 }}</td>
+        <td class="tal">{{ a.netto|kr:0 }}</td><td class="tal">{{ a.netto_manad|kr:0 }}</td>
         <td class="tal">{{ a.kvar_i_bolaget|kr:0 }}</td><td class="tal">{{ a.skattekvot }} %</td></tr>{% endfor %}</tbody>
   </table>
+  </div>
 </article>
 {% elif r %}
 <p class="meddelande warning">Det finns ingen möjlig fördelning med de här villkoren. Kontrollera resultat, maxbelopp och lägsta lön.</p>
@@ -158,6 +161,7 @@
     <div class="bred knappar"><button>Räkna</button>
       <button formmethod="post" formaction="?" class="outline" name="spara" value="1">Spara skatt, ägarandel och maxbelopp som standard</button></div>
   </form>
+  {{ nivaer|json_script:"lu-nivaer" }}
   <p class="liten-text dimmad">Skatteregler för inkomståret 2026 (Skatteverket SKV 433): grundavdrag, jobbskatteavdrag,
     statlig skatt över 643 000 kr, skattereduktion för förvärvsinkomst och allmän pensionsavgift. Förutsätter att du är under 66 år,
     saknar andra inkomster och att lönen är densamma varje år. Räntebaserat utrymme och tjänstepension ingår inte.
@@ -166,6 +170,21 @@
 {% endblock %}
 
 {% block skript %}
+<script>
+// Lägsta lön: välj full SGI eller full pension i listan, eller skriv ett eget belopp
+(() => {
+  const niva = document.getElementById("id_min_lon_niva"), falt = document.getElementById("id_min_lon");
+  const nivaer = JSON.parse(document.getElementById("lu-nivaer")?.textContent || "{}");
+  if (!niva || !falt) return;
+  const visa = () => {
+    const v = nivaer[niva.value];
+    falt.readOnly = Boolean(v);
+    if (v) falt.value = falt.type === "number" ? v : Number(v).toLocaleString("sv-SE");
+  };
+  niva.addEventListener("change", () => { if (!niva.value) { falt.value = ""; falt.focus(); } visa(); });
+  visa();
+})();
+</script>
 <script>
 (function () {
   const yta = document.querySelector(".lu-diagram .diagram-yta");

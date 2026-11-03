@@ -110,7 +110,10 @@ def lon_och_utdelning(request):
              "kommunalskatt": foretag.kommunalskatt,
              "begravningsavgift": foretag.begravningsavgift,
              "arbetsgivaravgift": lu.agarens_arbetsgivaravgift(idag.year)}
-    form = LonUtdelningForm(request.GET if "resultat" in request.GET else None, initial=start)
+    # Lönenivåerna för full SGI och pension beror inte på skatt eller avgift, bara på årets basbelopp
+    standard = lu.rekommenderad_lon(idag.year, start["arbetsgivaravgift"])
+    nivaer = {"sgi": standard["sgi"]["lon"], "pension": standard["pension"]["lon"]}
+    form = LonUtdelningForm(request.GET if "resultat" in request.GET else None, initial=start, nivaer=nivaer)
     data = form.cleaned_data if form.is_bound and form.is_valid() else (start if not form.is_bound else None)
     resultat = None
     if data:
@@ -138,8 +141,9 @@ def lon_och_utdelning(request):
             if v is not None and v is not False:
                 q[k] = "on" if v is True else str(v)
     q["min_lon"] = str(rek["rekommenderad"]["lon"])
+    q.pop("min_lon_niva", None)
     return render(request, "planering/lon_och_utdelning.html", {
-        "form": form, "r": resultat, "prognos": prognos, "idag": idag, "rek": rek,
+        "form": form, "nivaer": {k: str(v) for k, v in nivaer.items()}, "r": resultat, "prognos": prognos, "idag": idag, "rek": rek,
         "med_minimilon": q.urlencode(), "fritt_fg": fritt_eget_kapital(idag.year - 1)})
 
 

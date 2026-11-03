@@ -202,7 +202,8 @@ def alternativ(f: Forutsattningar, lon, utdelning=None):
         "utdelning_inom": inom, "utdelning_tjanst": tjanst, "utdelning_over_tak": over_tak,
         "skatt_lon": skatt_utan_utd, "skatt_utdelning": skatt_tjanst_utd + skatt_kapital,
         "inkomstskatt": skatt_lon, "netto_lon": netto_lon, "netto_utdelning": netto_utd, "netto": netto,
-        "uttag": lon + utdelning, "lon_manad": lon / 12, "netto_manad": netto / 12, "uttag_inkl_avgifter": lonekostnad + utdelning, "kvar_i_bolaget": kvar,
+        "uttag": lon + utdelning, "lon_manad": (lon / 12).quantize(D(1)), "netto_manad": (netto / 12).quantize(D(1)),
+        "uttag_inkl_avgifter": lonekostnad + utdelning, "kvar_i_bolaget": kvar,
         "totala_skatter": totala_skatter,
         "skattekvot": (totala_skatter / (netto + totala_skatter) * 100).quantize(D("0.1"))
         if netto + totala_skatter > 0 else NOLL,

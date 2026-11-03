@@ -283,11 +283,20 @@ def ratta_verifikation(vernr, orsak, ar=None, datum=None):
                      nasta_steg="Bokför nu det som är rätt, t.ex. med registrera_kvitto eller ny_verifikation.")
 
 
+def _lagsta_lon(min_lon, ar):
+    from planering import lon_utdelning as lu
+    niva = str(min_lon or "").strip().lower()
+    if niva in ("sgi", "pension"):
+        return lu.rekommenderad_lon(ar, lu.agarens_arbetsgivaravgift(ar))[niva]["lon"]
+    return _belopp(min_lon or 0, "min_lon")
+
+
 def lon_eller_utdelning(resultat_fore_lon=None, max_uttag=None, max_inkl_avgifter=False, min_lon=0,
                         fritt_eget_kapital=0):
     """Bästa fördelning mellan lön och utdelning enligt 3:12-reglerna, med företagets sparade skatteuppgifter.
 
     Utdelningen begränsas till gränsbeloppet som lönen ger (grundbelopp + lönebaserat), utan sparat utrymme.
+    min_lon kan vara ett belopp eller "sgi" / "pension" för lönen som ger full SGI respektive full allmän pension.
     """
     from planering import lon_utdelning as lu
     f = Foretag.hamta()
@@ -301,14 +310,14 @@ def lon_eller_utdelning(resultat_fore_lon=None, max_uttag=None, max_inkl_avgifte
         fritt_eget_kapital=_belopp(fritt_eget_kapital or 0, "fritt_eget_kapital"),
         max_uttag=_belopp(tak, "max_uttag") if tak is not None else None,
         max_inklusive_avgifter=bool(max_inkl_avgifter or (max_uttag in (None, "") and f.max_uttag_inkl_avgifter)),
-        min_lon=_belopp(min_lon or 0, "min_lon"))
+        min_lon=_lagsta_lon(min_lon, idag.year))
     bast, alla = lu.optimera(forut)
     if not bast:
         raise VerktygsFel("Ingen möjlig fördelning med de villkoren. Kontrollera resultat, maxbelopp och lägsta lön.")
 
     def kort(a):
-        return {"lon": str(a["lon"]), "utdelning": str(a["utdelning"]), "inom_gransbelopp": str(a["utdelning_inom"]),
-                "netto_till_agaren": str(a["netto"]), "kvar_i_bolaget": str(a["kvar_i_bolaget"]),
+        return {"lon": str(a["lon"]), "lon_per_manad": str(a["lon_manad"]), "utdelning": str(a["utdelning"]), "inom_gransbelopp": str(a["utdelning_inom"]),
+                "netto_till_agaren": str(a["netto"]), "netto_per_manad": str(a["netto_manad"]), "kvar_i_bolaget": str(a["kvar_i_bolaget"]),
                 "skatter_och_avgifter_procent": str(a["skattekvot"])}
     rek = lu.rekommenderad_lon(idag.year, forut.arbetsgivaravgift, forut.kommunalskatt, forut.avgift)
     rekommenderad = {n["namn"]: {"lon_per_ar": str(n["lon"]), "lon_per_manad": str(n["lon_manad"]),

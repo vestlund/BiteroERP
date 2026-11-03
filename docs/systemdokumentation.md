@@ -211,7 +211,8 @@ bara bokföras en gång.
   - Inkomstskatt enligt Skatteverkets tekniska beskrivning SKV 433 för 2026: grundavdrag, jobbskatteavdrag,
     kommunalskatt, statlig skatt 20 % över skiktgränsen 643 000 kr, skattereduktion för förvärvsinkomst,
     allmän pensionsavgift 7 % med motsvarande skattereduktion, samt begravnings- och kyrkoavgift.
-  - Villkor: max uttag (lön + utdelning, valfritt inklusive arbetsgivaravgifter), och lägsta lön. Lönen provas i steg om 1 000 kr plus brytpunkter (statlig skatt,
+  - Villkor: max uttag (lön + utdelning, valfritt inklusive arbetsgivaravgifter), och lägsta lön (eget belopp
+    eller vald nivå: full SGI eller full allmän pension). Lönen provas i steg om 1 000 kr plus brytpunkter (statlig skatt,
     8 inkomstbasbelopp, pensionstak). Vid lika netto väljs lägst uttag.
   - Rekommenderad lägsta lön: den högre av full SGI (10 prisbasbelopp, Försäkringskassans tak) och full
     allmän pension (8,07 inkomstbasbelopp, som ger högsta pensionsgrundande inkomst 7,5 inkomstbasbelopp),

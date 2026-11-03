@@ -122,6 +122,19 @@ class Sida(TestCase):
             self.assertContains(r, text)
         self.assertNotRegex(r.content.decode(), r'(cx|x1|points)="[0-9]+,[0-9]')
         self.assertContains(r, "Jämför")
+        for text in ("Lön per månad", "Netto per år", "Netto per månad", "Full SGI (", "Full allmän pension ("):
+            self.assertContains(r, text)
+        # lägsta lön från listan: full pension ger minst 673 038 kr lön, eget belopp används utan val
+        r = self.client.get(url, {**data, "min_lon_niva": "pension", "min_lon": "100"})
+        self.assertGreaterEqual(r.context["r"]["bast"]["lon"], 673038)
+        self.assertEqual(r.context["form"].cleaned_data["min_lon"], 673038)
+        r = self.client.get(url, {**data, "min_lon_niva": "sgi"})
+        self.assertEqual(r.context["form"].cleaned_data["min_lon"], 592000)
+        r = self.client.get(url, {**data, "min_lon": "700 000"})
+        self.assertGreaterEqual(r.context["r"]["bast"]["lon"], 700000)
+        a = r.context["r"]["bast"]
+        self.assertEqual(a["lon_manad"], round(a["lon"] / 12))
+        self.assertEqual(a["netto_manad"], round(a["netto"] / 12))
         r = self.client.post(url, {**data, "spara": "1", "max_inkl_avgifter": "on"})
         self.assertEqual(r.status_code, 302)
         self.assertNotIn("csrf", r["Location"])
@@ -139,3 +152,6 @@ class Claude(TestCase):
         self.assertLessEqual(D(r["bast"]["lon"]) + D(r["bast"]["utdelning"]), 900000)
         self.assertTrue(r["jamforelse"])
         self.assertEqual(r["rekommenderad_lagsta_lon"]["Full allmän pension"]["lon_per_ar"], "673038")
+        self.assertIn("netto_per_manad", r["bast"])
+        self.assertGreaterEqual(D(lon_eller_utdelning("1 500 000", min_lon="sgi")["bast"]["lon"]), 592000)
+        self.assertGreaterEqual(D(lon_eller_utdelning("1 500 000", min_lon="pension")["bast"]["lon"]), 673038)

@@ -246,6 +246,7 @@ def lon_eller_utdelning(resultat_fore_lon: str = "", max_uttag: str = "", max_in
     """Räkna ut fördelningen mellan lön och utdelning som ger mest netto (3:12-reglerna, 2026).
 
     Utan resultat används prognosen från bokföringen och budgeten. Utan max_uttag används det sparade maxbeloppet.
+    min_lon kan vara ett belopp eller "sgi" / "pension" (lönen som ger full SGI respektive full allmän pension).
     Utdelningen begränsas till gränsbeloppet som lönen ger (grundbelopp + lönebaserat), utan sparat utrymme.
     """
     return a.lon_eller_utdelning(resultat_fore_lon or None, max_uttag or None, max_inkl_avgifter, min_lon,

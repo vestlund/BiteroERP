@@ -32,8 +32,11 @@ class LonUtdelningForm(forms.Form):
     max_uttag = BeloppField(label="Max uttag (lön + utdelning)", decimal_places=0, required=False, min_value=0,
                             help_text="Tomt = ingen gräns")
     max_inkl_avgifter = forms.BooleanField(label="Maxbeloppet inkluderar arbetsgivaravgifter", required=False)
+    min_lon_niva = forms.ChoiceField(label="Lägsta lön", required=False,
+                                     choices=[("", "Eget belopp"), ("sgi", "Full SGI"),
+                                              ("pension", "Full allmän pension")])
     min_lon = BeloppField(label="Lägsta lön per år", decimal_places=0, required=False, min_value=0,
-                          help_text="T.ex. för pension och sjukpenning")
+                          help_text="Skriv ett eget belopp, eller välj full SGI eller pension i listan")
     fritt_eget_kapital = BeloppField(label="Fritt eget kapital från tidigare år att dela ut", decimal_places=0,
                                      required=False, min_value=0)
     ovriga_loner = BeloppField(label="Övriga anställdas löner per år", decimal_places=0, required=False, min_value=0)
@@ -41,3 +44,19 @@ class LonUtdelningForm(forms.Form):
     kommunalskatt = BeloppField(label="Kommunalskatt %", min_value=20, max_value=40)
     begravningsavgift = BeloppField(label="Begravnings- och kyrkoavgift %", required=False, min_value=0, max_value=3)
     arbetsgivaravgift = BeloppField(label="Arbetsgivaravgift %", min_value=0, max_value=40)
+
+    def __init__(self, *args, nivaer=None, **kwargs):
+        """`nivaer` är {"sgi": lön, "pension": lön} från rekommenderad_lon; beloppen visas i listan."""
+        super().__init__(*args, **kwargs)
+        self.nivaer = nivaer or {}
+        if self.nivaer:
+            from verksamhet.templatetags.kr import kr
+            self.fields["min_lon_niva"].choices = [("", "Eget belopp")] + [
+                (k, f"{text} ({kr(self.nivaer[k], 0)} kr/år)") for k, text in
+                (("sgi", "Full SGI"), ("pension", "Full allmän pension")) if k in self.nivaer]
+
+    def clean(self):
+        d = super().clean()
+        if d.get("min_lon_niva") in self.nivaer:
+            d["min_lon"] = self.nivaer[d["min_lon_niva"]]
+        return d
