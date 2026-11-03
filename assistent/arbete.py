@@ -284,8 +284,11 @@ def ratta_verifikation(vernr, orsak, ar=None, datum=None):
 
 
 def lon_eller_utdelning(resultat_fore_lon=None, max_uttag=None, max_inkl_avgifter=False, min_lon=0,
-                        fritt_eget_kapital=0, bara_inom_gransbelopp=False):
-    """Bästa fördelning mellan lön och utdelning enligt 3:12-reglerna, med företagets sparade skatteuppgifter."""
+                        fritt_eget_kapital=0):
+    """Bästa fördelning mellan lön och utdelning enligt 3:12-reglerna, med företagets sparade skatteuppgifter.
+
+    Utdelningen begränsas till gränsbeloppet som lönen ger (grundbelopp + lönebaserat), utan sparat utrymme.
+    """
     from planering import lon_utdelning as lu
     f = Foretag.hamta()
     idag = _idag()
@@ -295,10 +298,10 @@ def lon_eller_utdelning(resultat_fore_lon=None, max_uttag=None, max_inkl_avgifte
     forut = lu.Forutsattningar(
         ar=idag.year, resultat_fore_agarlon=res, kommunalskatt=f.kommunalskatt, avgift=f.begravningsavgift,
         arbetsgivaravgift=lu.agarens_arbetsgivaravgift(idag.year), agarandel=f.agarandel,
-        sparat=f.sparat_utdelningsutrymme, fritt_eget_kapital=_belopp(fritt_eget_kapital or 0, "fritt_eget_kapital"),
+        fritt_eget_kapital=_belopp(fritt_eget_kapital or 0, "fritt_eget_kapital"),
         max_uttag=_belopp(tak, "max_uttag") if tak is not None else None,
         max_inklusive_avgifter=bool(max_inkl_avgifter or (max_uttag in (None, "") and f.max_uttag_inkl_avgifter)),
-        min_lon=_belopp(min_lon or 0, "min_lon"), bara_inom_gransbelopp=bool(bara_inom_gransbelopp))
+        min_lon=_belopp(min_lon or 0, "min_lon"))
     bast, alla = lu.optimera(forut)
     if not bast:
         raise VerktygsFel("Ingen möjlig fördelning med de villkoren. Kontrollera resultat, maxbelopp och lägsta lön.")

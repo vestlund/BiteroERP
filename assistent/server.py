@@ -242,13 +242,14 @@ def viktiga_datum(dagar: int = 90) -> list:
 @server.tool(annotations=LAS, structured_output=False)
 @_som_claude
 def lon_eller_utdelning(resultat_fore_lon: str = "", max_uttag: str = "", max_inkl_avgifter: bool = False,
-                        min_lon: str = "0", fritt_eget_kapital: str = "0", bara_inom_gransbelopp: bool = False) -> dict:
+                        min_lon: str = "0", fritt_eget_kapital: str = "0") -> dict:
     """Räkna ut fördelningen mellan lön och utdelning som ger mest netto (3:12-reglerna, 2026).
 
     Utan resultat används prognosen från bokföringen och budgeten. Utan max_uttag används det sparade maxbeloppet.
+    Utdelningen begränsas till gränsbeloppet som lönen ger (grundbelopp + lönebaserat), utan sparat utrymme.
     """
     return a.lon_eller_utdelning(resultat_fore_lon or None, max_uttag or None, max_inkl_avgifter, min_lon,
-                                 fritt_eget_kapital, bara_inom_gransbelopp)
+                                 fritt_eget_kapital)
 
 
 @server.tool(annotations=SKRIV, structured_output=False)

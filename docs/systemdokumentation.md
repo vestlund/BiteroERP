@@ -204,14 +204,14 @@ bara bokföras en gång.
   som ger störst nettobelopp till ägaren av lön plus utdelning, givet ett prognostiserat resultat före ägarens lön.
   - Modell: samma lön varje år. Lönen kostar lön × (1 + arbetsgivaravgift). Resten beskattas med 20,6 %
     bolagsskatt och kan delas ut året efter, tillsammans med eventuellt fritt eget kapital från tidigare år.
-  - Gränsbeloppet räknas som ovan med lönen som löneunderlag. Utdelning inom gränsbeloppet beskattas med 20 %,
-    över gränsbeloppet som tjänst (utan arbetsgivaravgift, jobbskatteavdrag och pensionsrätt) upp till
-    90 inkomstbasbelopp och därefter med 30 %.
+  - Utdelningen begränsas alltid till gränsbeloppet som lönen i kalkylen ger: grundbelopp (4 IBB × ägarandel)
+    plus lönebaserat utrymme med lönen som löneunderlag. Sparat utrymme från tidigare år räknas inte med, så
+    det är lönen som avgör utdelningsutrymmet. Utdelningen beskattas därmed med 20 %. (Funktionen kan fortfarande
+    räkna på en angiven utdelning över gränsbeloppet: som tjänst upp till 90 IBB och därefter 30 %.)
   - Inkomstskatt enligt Skatteverkets tekniska beskrivning SKV 433 för 2026: grundavdrag, jobbskatteavdrag,
     kommunalskatt, statlig skatt 20 % över skiktgränsen 643 000 kr, skattereduktion för förvärvsinkomst,
     allmän pensionsavgift 7 % med motsvarande skattereduktion, samt begravnings- och kyrkoavgift.
-  - Villkor: max uttag (lön + utdelning, valfritt inklusive arbetsgivaravgifter), lägsta lön och att bara
-    ta utdelning inom gränsbeloppet. Lönen provas i steg om 1 000 kr plus brytpunkter (statlig skatt,
+  - Villkor: max uttag (lön + utdelning, valfritt inklusive arbetsgivaravgifter), och lägsta lön. Lönen provas i steg om 1 000 kr plus brytpunkter (statlig skatt,
     8 inkomstbasbelopp, pensionstak). Vid lika netto väljs lägst uttag.
   - Rekommenderad lägsta lön: den högre av full SGI (10 prisbasbelopp, Försäkringskassans tak) och full
     allmän pension (8,07 inkomstbasbelopp, som ger högsta pensionsgrundande inkomst 7,5 inkomstbasbelopp),

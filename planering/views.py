@@ -94,9 +94,8 @@ def lon_och_utdelning(request):
             foretag.max_uttag = d["max_uttag"]
             foretag.max_uttag_inkl_avgifter = d["max_inkl_avgifter"]
             foretag.agarandel = d["agarandel"]
-            foretag.sparat_utdelningsutrymme = d["sparat"] or 0
             foretag.save(update_fields=["kommunalskatt", "begravningsavgift", "max_uttag", "max_uttag_inkl_avgifter",
-                                        "agarandel", "sparat_utdelningsutrymme"])
+                                        "agarandel"])
             messages.success(request, "Uppgifterna sparades och används som utgångsläge nästa gång.")
         else:
             messages.error(request, "Kontrollera uppgifterna.")
@@ -108,7 +107,7 @@ def lon_och_utdelning(request):
     prognos = lu.resultat_fore_lon(idag)
     start = {"resultat": prognos["resultat"], "max_uttag": foretag.max_uttag,
              "max_inkl_avgifter": foretag.max_uttag_inkl_avgifter, "agarandel": foretag.agarandel,
-             "sparat": foretag.sparat_utdelningsutrymme, "kommunalskatt": foretag.kommunalskatt,
+             "kommunalskatt": foretag.kommunalskatt,
              "begravningsavgift": foretag.begravningsavgift,
              "arbetsgivaravgift": lu.agarens_arbetsgivaravgift(idag.year)}
     form = LonUtdelningForm(request.GET if "resultat" in request.GET else None, initial=start)
@@ -119,11 +118,10 @@ def lon_och_utdelning(request):
             ar=idag.year, resultat_fore_agarlon=Decimal(data["resultat"]),
             kommunalskatt=Decimal(data["kommunalskatt"]), avgift=Decimal(data.get("begravningsavgift") or 0),
             arbetsgivaravgift=Decimal(data["arbetsgivaravgift"]), agarandel=Decimal(data["agarandel"]),
-            ovriga_loner=Decimal(data.get("ovriga_loner") or 0), sparat=Decimal(data.get("sparat") or 0),
+            ovriga_loner=Decimal(data.get("ovriga_loner") or 0),
             fritt_eget_kapital=Decimal(data.get("fritt_eget_kapital") or 0),
             max_uttag=Decimal(data["max_uttag"]) if data.get("max_uttag") is not None else None,
-            max_inklusive_avgifter=bool(data.get("max_inkl_avgifter")), min_lon=Decimal(data.get("min_lon") or 0),
-            bara_inom_gransbelopp=bool(data.get("bara_inom_gransbelopp")))
+            max_inklusive_avgifter=bool(data.get("max_inkl_avgifter")), min_lon=Decimal(data.get("min_lon") or 0))
         bast, alla = lu.optimera(f)
         rek_f = lu.rekommenderad_lon(idag.year, f.arbetsgivaravgift, f.kommunalskatt, f.avgift)
         markeringar = [{"lon": rek_f["pension"]["lon"], "text": "Full pension"},

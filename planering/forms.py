@@ -37,9 +37,7 @@ class LonUtdelningForm(forms.Form):
     fritt_eget_kapital = BeloppField(label="Fritt eget kapital från tidigare år att dela ut", decimal_places=0,
                                      required=False, min_value=0)
     ovriga_loner = BeloppField(label="Övriga anställdas löner per år", decimal_places=0, required=False, min_value=0)
-    sparat = BeloppField(label="Sparat utdelningsutrymme", decimal_places=0, required=False, min_value=0)
     agarandel = BeloppField(label="Ägarandel %", min_value=Decimal("0.01"), max_value=100)
     kommunalskatt = BeloppField(label="Kommunalskatt %", min_value=20, max_value=40)
     begravningsavgift = BeloppField(label="Begravnings- och kyrkoavgift %", required=False, min_value=0, max_value=3)
     arbetsgivaravgift = BeloppField(label="Arbetsgivaravgift %", min_value=0, max_value=40)
-    bara_inom_gransbelopp = forms.BooleanField(label="Bara utdelning inom gränsbeloppet (20 %)", required=False)

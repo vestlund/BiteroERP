@@ -3,6 +3,13 @@
 Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
 fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
 
+## 2026.11.03-4
+
+- Lön eller utdelning: utdelningen begränsas alltid till det gränsbelopp som lönen i kalkylen ger
+  (grundbelopp + lönebaserat utrymme). Sparat utrymme räknas inte med längre, och valet "bara utdelning inom
+  gränsbeloppet" och fältet för sparat utrymme är borttagna. Jämför-tabellen visar gränsbeloppet för varje lön.
+  Samma regel gäller Claude-verktyget lon_eller_utdelning.
+
 ## 2026.11.03-3
 
 - Diagrammet under Lön eller utdelning har skala och titel på båda axlarna (tkr), rutnät, hjälplinjer för

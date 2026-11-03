@@ -71,15 +71,30 @@ class Optimering(TestCase):
         self.assertLess(inkl["netto"], bast["netto"])
 
     def test_villkor(self):
-        bast, _ = lu.optimera(self.f(bara_inom_gransbelopp=True, max_uttag=D(600000)))
+        bast, _ = lu.optimera(self.f(max_uttag=D(600000)))
         self.assertLessEqual(bast["utdelning"], bast["gransbelopp"]["summa"])
         self.assertGreaterEqual(lu.optimera(self.f(min_lon=D(700000)))[0]["lon"], 700000)
         self.assertEqual(lu.optimera(self.f(min_lon=D(5000000)))[0], None)
 
-    def test_fritt_eget_kapital_och_sparat(self):
-        utan, _ = lu.optimera(self.f(max_uttag=D(800000)))
-        med, _ = lu.optimera(self.f(max_uttag=D(800000), sparat=D(300000)))
-        self.assertGreater(med["netto"], utan["netto"])
+    def test_utdelning_max_gransbelopp_fran_lonen(self):
+        """Utdelningen styrs av lönen i kalkylen: grundbelopp + lönebaserat, utan sparat utrymme."""
+        f = lu.Forutsattningar(ar=2026, resultat_fore_agarlon=D(5000000))
+        bast, alla = lu.optimera(f)
+        for a in lu.jamforelse(f, bast, alla) + alla:
+            gb = a["gransbelopp"]
+            self.assertEqual(gb["sparat"], 0)
+            self.assertEqual(gb["summa"], gb["grundbelopp"] + gb["lonebaserat"])
+            self.assertLessEqual(a["utdelning"], gb["summa"])
+            self.assertEqual(a["utdelning_tjanst"] + a["utdelning_over_tak"], 0)
+        # med gott om vinst blir utdelningen exakt gränsbeloppet, och högre lön ger större utrymme
+        lag, hog = lu.alternativ(f, D(500000)), lu.alternativ(f, D(1000000))
+        self.assertEqual(lag["utdelning"], 333600)
+        self.assertEqual(hog["utdelning"], 333600 + (1000000 - 667200) // 2)
+
+    def test_fritt_eget_kapital(self):
+        utan = lu.alternativ(lu.Forutsattningar(ar=2026, resultat_fore_agarlon=D(700000)), D(600000))
+        med = lu.alternativ(lu.Forutsattningar(ar=2026, resultat_fore_agarlon=D(700000), fritt_eget_kapital=D(400000)), D(600000))
+        self.assertGreater(med["utdelning"], utan["utdelning"])
 
 
 class Sida(TestCase):
@@ -99,7 +114,7 @@ class Sida(TestCase):
         self.assertContains(sida, kr(884507, 0))
         self.assertContains(sida, "min_lon=673038")
         data = {"resultat": "1 200 000", "max_uttag": "800 000", "agarandel": "100", "kommunalskatt": "30,5",
-                "begravningsavgift": "0,25", "arbetsgivaravgift": "31,42", "sparat": "0"}
+                "begravningsavgift": "0,25", "arbetsgivaravgift": "31,42"}
         r = self.client.get(url, data)
         self.assertContains(r, "Bästa fördelningen")
         # diagrammet har skalor, axeltitlar och hjälplinjer, och koordinater utan decimalkomma

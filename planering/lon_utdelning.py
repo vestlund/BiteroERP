@@ -154,16 +154,18 @@ class Forutsattningar:
     arbetsgivaravgift: Decimal = D("31.42")
     agarandel: Decimal = D(100)
     ovriga_loner: Decimal = NOLL
-    sparat: Decimal = NOLL
     fritt_eget_kapital: Decimal = NOLL
     max_uttag: Decimal | None = None
     max_inklusive_avgifter: bool = False
     min_lon: Decimal = NOLL
-    bara_inom_gransbelopp: bool = False
 
 
 def alternativ(f: Forutsattningar, lon, utdelning=None):
-    """Räknar ut ett alternativ. Utan angiven utdelning tas så mycket som villkoren tillåter."""
+    """Räknar ut ett alternativ. Utan angiven utdelning tas så mycket som villkoren tillåter.
+
+    Utdelningen begränsas alltid till gränsbeloppet som lönen i kalkylen ger (grundbelopp plus lönebaserat
+    utrymme). Sparat utrymme från tidigare år räknas inte med, så det är lönen som avgör utdelningsutrymmet.
+    """
     lon = D(lon)
     ag = (lon * f.arbetsgivaravgift / 100).quantize(D(1))
     lonekostnad = lon + ag
@@ -171,7 +173,7 @@ def alternativ(f: Forutsattningar, lon, utdelning=None):
     bolagsskatt = _helt(max(NOLL, _helt(fore_skatt / 100) * 100) * BOLAGSSKATT)
     vinst = fore_skatt - bolagsskatt
     utdelningsbart = max(NOLL, vinst + f.fritt_eget_kapital)
-    gb = gransbelopp(f.ar + 1, f.agarandel, loneunderlag=lon + f.ovriga_loner, egen_lon=lon, sparat=f.sparat)
+    gb = gransbelopp(f.ar + 1, f.agarandel, loneunderlag=lon + f.ovriga_loner, egen_lon=lon)
     tak = None
     if f.max_uttag is not None:
         tak = f.max_uttag - (lonekostnad if f.max_inklusive_avgifter else lon)
@@ -179,8 +181,7 @@ def alternativ(f: Forutsattningar, lon, utdelning=None):
         utdelning = utdelningsbart
         if tak is not None:
             utdelning = min(utdelning, tak)
-        if f.bara_inom_gransbelopp:
-            utdelning = min(utdelning, gb["summa"])
+        utdelning = min(utdelning, gb["summa"])
     utdelning = max(NOLL, _helt(utdelning))
     inom = min(utdelning, gb["summa"])
     p, p_ar = parametrar(f.ar + 1)

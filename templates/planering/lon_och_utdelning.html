@@ -76,9 +76,10 @@
   <table>
     <tr><td>Grundbelopp 4 × {{ b.gransbelopp.ibb|kr:0 }}</td><td class="tal">{{ b.gransbelopp.grundbelopp|kr:0 }}</td></tr>
     <tr><td>Lönebaserat: 50 % av (löner {{ b.gransbelopp.loneunderlag|kr:0 }} − {{ b.gransbelopp.loneavdrag|kr:0 }})</td><td class="tal">{{ b.gransbelopp.lonebaserat|kr:0 }}</td></tr>
-    <tr><td>Sparat utrymme</td><td class="tal">{{ b.gransbelopp.sparat|kr:0 }}</td></tr>
     <tr class="summa"><td>Gränsbelopp</td><td class="tal">{{ b.gransbelopp.summa|kr:0 }}</td></tr>
   </table>
+  <p class="liten-text dimmad">Utdelningen i kalkylen begränsas till gränsbeloppet som lönen ger. Sparat utrymme
+    från tidigare år räknas inte med.</p>
   {% if b.utdelning_inom < b.gransbelopp.summa %}<p class="liten-text">Outnyttjat gränsbelopp, {{ b.gransbelopp.summa|sub:b.utdelning_inom|kr:0 }} kr,
     sparas till kommande år.</p>{% endif %}
   <h3 class="liten-rubrik">Bra att veta</h3>
@@ -96,7 +97,7 @@
 {% if r.diagram %}{% with d=r.diagram b=r.bast %}
 <article class="lu-diagram">
   <h3 class="liten-rubrik">Netto till dig beroende på lön</h3>
-  <p class="liten-text dimmad">Varje punkt på linjen är en lön per år med den utdelning som villkoren tillåter.
+  <p class="liten-text dimmad">Varje punkt på linjen är en lön per år med så stor utdelning som gränsbeloppet från den lönen tillåter.
     Håll muspekaren över linjen för att se beloppen.</p>
   <div class="diagram-yta">
   <svg viewBox="0 0 {{ d.bredd }} {{ d.hojd }}" role="img"
@@ -131,12 +132,14 @@
 
 <article>
   <h3 class="liten-rubrik">Jämför</h3>
+  <p class="liten-text dimmad">Utdelningen är max det gränsbelopp som lönen på raden ger (grundbelopp + lönebaserat
+    utrymme), utan sparat utrymme. Den kan bli lägre om vinsten eller maxbeloppet inte räcker.</p>
   <table>
-    <thead><tr><th class="tal">Lön</th><th class="tal">Utdelning</th><th class="tal">varav inom gränsbelopp</th>
+    <thead><tr><th class="tal">Lön</th><th class="tal">Utdelning</th><th class="tal">Gränsbelopp</th>
       <th class="tal">Netto till dig</th><th class="tal">Kvar i bolaget</th><th class="tal">Skatter och avgifter</th></tr></thead>
     <tbody>{% for a in r.tabell %}
       <tr{% if a == r.bast %} class="summa"{% endif %}><td class="tal">{{ a.lon|kr:0 }}</td><td class="tal">{{ a.utdelning|kr:0 }}</td>
-        <td class="tal">{{ a.utdelning_inom|kr:0 }}</td><td class="tal">{{ a.netto|kr:0 }}</td>
+        <td class="tal">{{ a.gransbelopp.summa|kr:0 }}</td><td class="tal">{{ a.netto|kr:0 }}</td>
         <td class="tal">{{ a.kvar_i_bolaget|kr:0 }}</td><td class="tal">{{ a.skattekvot }} %</td></tr>{% endfor %}</tbody>
   </table>
 </article>
