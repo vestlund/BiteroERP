@@ -200,7 +200,7 @@ bara bokföras en gång.
   - Fritt eget kapital beräknas från nästa års ingående balanser. Beräkningen är ett planeringsstöd och
     ersätter inte K10.
 
-- **Lön eller utdelning** (Lön → Lön eller utdelning, `planering/lon_utdelning.py`): räknar fram den lön
+- **Lön eller utdelning** (Planering → Lön eller utdelning, `planering/lon_utdelning.py`): räknar fram den lön
   som ger störst nettobelopp till ägaren av lön plus utdelning, givet ett prognostiserat resultat före ägarens lön.
   - Modell: samma lön varje år. Lönen kostar lön × (1 + arbetsgivaravgift). Resten beskattas med 20,6 %
     bolagsskatt och kan delas ut året efter, tillsammans med eventuellt fritt eget kapital från tidigare år.
@@ -213,6 +213,9 @@ bara bokföras en gång.
   - Villkor: max uttag (lön + utdelning, valfritt inklusive arbetsgivaravgifter), lägsta lön och att bara
     ta utdelning inom gränsbeloppet. Lönen provas i steg om 1 000 kr plus brytpunkter (statlig skatt,
     8 inkomstbasbelopp, pensionstak). Vid lika netto väljs lägst uttag.
+  - Rekommenderad lägsta lön: den högre av full SGI (10 prisbasbelopp, Försäkringskassans tak) och full
+    allmän pension (8,07 inkomstbasbelopp, som ger högsta pensionsgrundande inkomst 7,5 inkomstbasbelopp),
+    med kostnad för bolaget inklusive arbetsgivaravgift.
   - Förenklingar: under 66 år, inga andra inkomster, inget räntebaserat utrymme, ingen tjänstepension.
     Kommunalskatt, avgift och maxbelopp sparas under Företagsuppgifter. Skatteparametrar finns per år i
     `PARAMETRAR`; saknas ett år används det senast kända och ska uppdateras när Skatteverket publicerar nya belopp.

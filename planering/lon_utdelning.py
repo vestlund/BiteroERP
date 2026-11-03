@@ -110,6 +110,41 @@ def inkomstskatt(lon, tjanst_utdelning, kommunalskatt, avgift=NOLL, ar=2026):
             "skatt": skatt.quantize(D(1))}
 
 
+SGI_TAK_PBB = 10  # högsta sjukpenninggrundande inkomst, även föräldrapenning (Försäkringskassan)
+
+
+STANDARD_KOMMUNALSKATT, STANDARD_AVGIFT = D("32.38"), D("0.27")
+
+
+def rekommenderad_lon(ar, arbetsgivaravgift, kommunalskatt=STANDARD_KOMMUNALSKATT, avgift=STANDARD_AVGIFT):
+    """Lägsta lön för full SGI och full allmän pension, och vad den kostar bolaget.
+
+    - Full SGI: 10 prisbasbelopp per år.
+    - Full allmän pension: 8,07 inkomstbasbelopp per år (ger högsta pensionsgrundande inkomst, 7,5 IBB, efter
+      avdrag för den allmänna pensionsavgiften).
+    Den rekommenderade lägsta lönen är den högre av de två. Lön över den ger varken mer sjukpenning eller
+    mer allmän pension.
+    """
+    p, p_ar = parametrar(ar)
+    ag = D(arbetsgivaravgift) / 100
+
+    def niva(namn, beskrivning, lon):
+        lon = D(math.ceil(lon))
+        avg = (lon * ag).quantize(D(1))
+        skatt = inkomstskatt(lon, NOLL, kommunalskatt, avgift, ar)["skatt"]
+        return {"namn": namn, "beskrivning": beskrivning, "lon": lon, "lon_manad": D(math.ceil(lon / 12)),
+                "arbetsgivaravgift": avg, "kostnad": lon + avg, "kostnad_manad": D(math.ceil((lon + avg) / 12)),
+                "netto": lon - skatt, "netto_manad": ((lon - skatt) / 12).quantize(D(1))}
+    def kr(v):
+        return f"{v:,.0f}".replace(",", " ")
+    sgi = niva("Full SGI", f"{SGI_TAK_PBB} × prisbasbeloppet {kr(p['pbb'])} kr", SGI_TAK_PBB * p["pbb"])
+    pension = niva("Full allmän pension", f"8,07 × inkomstbasbeloppet {kr(p['ibb'])} kr", PENSIONSTAK_IBB * p["ibb"])
+    rek = max(sgi, pension, key=lambda n: n["lon"])
+    brytpunkt = p["skiktgrans"] + D("0.293") * p["pbb"]
+    return {"ar": p_ar, "sgi": sgi, "pension": pension, "nivaer": [sgi, pension], "rekommenderad": rek, "arbetsgivaravgift": D(arbetsgivaravgift),
+            "brytpunkt": _hundra_upp(brytpunkt), "over_brytpunkt": rek["lon"] > brytpunkt}
+
+
 @dataclass
 class Forutsattningar:
     ar: int

@@ -37,6 +37,18 @@ class Inkomstskatt2026(TestCase):
         self.assertEqual(u["pensionsavgift"], s["pensionsavgift"])
 
 
+class RekommenderadLon(TestCase):
+    def test_2026(self):
+        r = lu.rekommenderad_lon(2026, D("31.42"))
+        self.assertEqual((r["sgi"]["lon"], r["sgi"]["kostnad"]), (D(592000), D(778006)))     # 10 pbb × 1,3142
+        self.assertEqual((r["pension"]["lon"], r["pension"]["lon_manad"]), (D(673038), D(56087)))  # 8,07 ibb
+        self.assertEqual(r["pension"]["kostnad"], D(884507))
+        self.assertEqual(r["rekommenderad"], r["pension"])
+        self.assertTrue(r["over_brytpunkt"])
+        aldre = lu.rekommenderad_lon(2026, D("10.21"))
+        self.assertEqual(aldre["pension"]["kostnad"], D(673038) + D(68717))
+
+
 class Optimering(TestCase):
     def f(self, **kw):
         return lu.Forutsattningar(ar=2026, resultat_fore_agarlon=D(1500000), **kw)
@@ -77,7 +89,15 @@ class Sida(TestCase):
 
     def test_visa_och_spara(self):
         url = reverse("lon_och_utdelning")
-        self.assertContains(self.client.get(url), "Lön eller utdelning")
+        self.assertEqual(url, "/planering/lon-och-utdelning/")
+        self.assertRedirects(self.client.get("/lon/lon-och-utdelning/?resultat=1"), url + "?resultat=1",
+                             fetch_redirect_response=False)
+        sida = self.client.get(url)
+        self.assertContains(sida, "Rekommenderad lägsta lön")
+        from verksamhet.templatetags.kr import kr
+        self.assertContains(sida, kr(673038, 0))
+        self.assertContains(sida, kr(884507, 0))
+        self.assertContains(sida, "min_lon=673038")
         data = {"resultat": "1 200 000", "max_uttag": "800 000", "agarandel": "100", "kommunalskatt": "30,5",
                 "begravningsavgift": "0,25", "arbetsgivaravgift": "31,42", "sparat": "0"}
         r = self.client.get(url, data)
@@ -99,3 +119,4 @@ class Claude(TestCase):
         r = lon_eller_utdelning("1 500 000", "900000")
         self.assertLessEqual(D(r["bast"]["lon"]) + D(r["bast"]["utdelning"]), 900000)
         self.assertTrue(r["jamforelse"])
+        self.assertEqual(r["rekommenderad_lagsta_lon"]["Full allmän pension"]["lon_per_ar"], "673038")

@@ -8,6 +8,35 @@
   enligt 3:12-reglerna från 2026. Lönen tas ut under året och årets vinst delas ut året efter. Kalkylen förutsätter att
   du tar samma lön varje år.</p>
 
+<section class="kort rekommenderad-lon">
+  <div class="kort-rubrik"><h2>Rekommenderad lägsta lön {{ rek.ar|stringformat:"d" }}</h2></div>
+  <p class="kort-under">Lägsta lön för att få full sjukpenning- och föräldrapenninggrundande inkomst (SGI) och full
+    avsättning till allmän pension. Lön över nivån ger inget mer från socialförsäkringen.</p>
+  <div class="kpi">
+    <article class="framhavd"><div class="etikett">Rekommenderad lön</div>
+      <div class="varde">{{ rek.rekommenderad.lon_manad|kr:0 }} kr/mån</div>
+      <div class="under">{{ rek.rekommenderad.lon|kr:0 }} kr per år · {{ rek.rekommenderad.namn|lower }}</div></article>
+    <article class="framhavd"><div class="etikett">Kostar bolaget totalt</div>
+      <div class="varde">{{ rek.rekommenderad.kostnad_manad|kr:0 }} kr/mån</div>
+      <div class="under">{{ rek.rekommenderad.kostnad|kr:0 }} kr per år inkl. arbetsgivaravgift {{ rek.arbetsgivaravgift|kr }} %</div></article>
+    <article><div class="etikett">Netto till dig</div>
+      <div class="varde">{{ rek.rekommenderad.netto_manad|kr:0 }} kr/mån</div>
+      <div class="under">efter skatt</div></article>
+  </div>
+  <table>
+    <thead><tr><th>Mål</th><th>Gräns</th><th class="tal">Lön per månad</th><th class="tal">Lön per år</th>
+      <th class="tal">Arbetsgivaravgift per år</th><th class="tal">Kostnad för bolaget per år</th></tr></thead>
+    <tbody>{% for n in rek.nivaer %}
+      <tr{% if n == rek.rekommenderad %} class="summa"{% endif %}><td>{{ n.namn }}</td><td class="liten-text">{{ n.beskrivning }}</td>
+        <td class="tal">{{ n.lon_manad|kr:0 }}</td><td class="tal">{{ n.lon|kr:0 }}</td>
+        <td class="tal">{{ n.arbetsgivaravgift|kr:0 }}</td><td class="tal">{{ n.kostnad|kr:0 }}</td></tr>{% endfor %}</tbody>
+  </table>
+  <p class="liten-text">{% if rek.over_brytpunkt %}Nivån för full pension ligger strax över brytpunkten för statlig skatt
+    ({{ rek.brytpunkt|kr:0 }} kr per år), så den sista delen av lönen beskattas även med 20 % statlig skatt. {% endif %}
+    SGI räknas på din förväntade årsinkomst, så ta ut lönen jämnt varje månad.
+    <a href="?{{ med_minimilon }}">Räkna med den här lönen som lägsta lön →</a></p>
+</section>
+
 {% if r and r.bast %}{% with b=r.bast %}
 <div class="kpi">
   <article><div class="etikett">Lön per år</div><div class="varde">{{ b.lon|kr:0 }}</div><div class="under">{{ b.lon_manad|kr:0 }} kr/mån</div></article>
@@ -54,6 +83,8 @@
     sparas till kommande år.</p>{% endif %}
   <h3 class="liten-rubrik">Bra att veta</h3>
   <ul class="liten-text">
+    {% if b.lon < rek.rekommenderad.lon %}<li><b>Lönen är lägre än rekommenderad lägsta lön ({{ rek.rekommenderad.lon|kr:0 }} kr)</b>,
+      så du får inte full SGI och allmän pension. <a href="?{{ med_minimilon }}">Räkna med lägsta lön</a>.</li>{% endif %}
     <li>Pensionsgrundande lön: {{ b.pensionsgrundande|kr:0 }} kr. Utdelning ger ingen allmän pension eller sjukpenning.</li>
     <li>Lönen behöver överstiga {{ b.gransbelopp.loneavdrag|kr:0 }} kr (8 inkomstbasbelopp) innan den ger lönebaserat utrymme.</li>
     <li>Utdelning kräver fastställd balansräkning, beslut på årsstämman och att bolaget har kvar tillräckligt kapital.</li>

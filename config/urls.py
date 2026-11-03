@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path
+from django.views.generic import RedirectView
 
 from bokforing import io_views as io
 from bokforing import views as b
@@ -22,6 +23,7 @@ urlpatterns = [
     path("planering/likviditet/", pl.likviditetssida, name="likviditet"),
     path("planering/viktiga-datum/", pl.fristsida, name="frister"),
     path("planering/skatt/", pl.skattesida, name="skatt"),
+    path("planering/lon-och-utdelning/", pl.lon_och_utdelning, name="lon_och_utdelning"),
     path("planering/viktiga-datum/frister.ics", pl.frister_ics, name="frister_ics"),
     # budget
     path("budget/", bu.uppfoljning, name="budget_aktuell"),
@@ -45,7 +47,8 @@ urlpatterns = [
     path("lon/anstallda/<int:pk>/", l.anstalld, name="anstalld"),
     path("lon/anstallda/<int:pk>/andra/", l.anstalld_form, name="anstalld_andra"),
     path("lon/agi/", l.arbetsgivardeklaration, name="agi"),
-    path("lon/lon-och-utdelning/", l.lon_och_utdelning, name="lon_och_utdelning"),
+    # flyttad till Planering; gamla adressen pekar vidare
+    path("lon/lon-och-utdelning/", RedirectView.as_view(pattern_name="lon_och_utdelning", query_string=True)),
     path("lon/agi/fil/", l.agi_fil, name="agi_fil"),
     path("installningar/behandlingshistorik/", lg.lista, name="logg"),
     path("installningar/behandlingshistorik/export.csv", lg.export_csv, name="logg_csv"),

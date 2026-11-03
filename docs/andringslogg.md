@@ -3,6 +3,14 @@
 Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
 fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
 
+## 2026.11.03-2
+
+- **Lön eller utdelning** ligger nu under Planering (gamla adressen pekar vidare).
+- Ny del överst: **rekommenderad lägsta lön** för full SGI (10 prisbasbelopp, 592 000 kr 2026) och full
+  allmän pension (8,07 inkomstbasbelopp, 673 038 kr 2026), med lön per månad och år, arbetsgivaravgift och
+  total kostnad för bolaget. Länk för att räkna med den som lägsta lön, och varning om kalkylens lön är lägre.
+- Claudes verktyg `lon_eller_utdelning` visar också rekommenderad lägsta lön.
+
 ## 2026.11.03-1
 
 - **Tidrapporten visar hela månaden:** en rad per dag och en kolumn per uppdrag, med summor per dag, uppdrag

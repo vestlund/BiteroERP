@@ -143,3 +143,8 @@ article.varning { border-left: 4px solid #f79009; background: #fffaeb; }
 .datumfalt .datum-knapp:hover { color: #0f766e; }
 .datumfalt .datum-valjare { position: absolute; right: 0; bottom: 0; width: 1px; height: 1px; opacity: 0;
   pointer-events: none; border: 0; padding: 0; margin: 0; }
+
+/* Rekommenderad lägsta lön */
+.rekommenderad-lon { margin-bottom: 1rem; }
+.rekommenderad-lon .kpi article.framhavd { border-color: #0f766e; background: #e6f4f1; }
+.rekommenderad-lon .kpi article.framhavd .varde { color: #0f766e; }

@@ -307,7 +307,11 @@ def lon_eller_utdelning(resultat_fore_lon=None, max_uttag=None, max_inkl_avgifte
         return {"lon": str(a["lon"]), "utdelning": str(a["utdelning"]), "inom_gransbelopp": str(a["utdelning_inom"]),
                 "netto_till_agaren": str(a["netto"]), "kvar_i_bolaget": str(a["kvar_i_bolaget"]),
                 "skatter_och_avgifter_procent": str(a["skattekvot"])}
-    return {"forutsattningar": {"resultat_fore_lon": str(res), "max_uttag": _s(forut.max_uttag),
+    rek = lu.rekommenderad_lon(idag.year, forut.arbetsgivaravgift, forut.kommunalskatt, forut.avgift)
+    rekommenderad = {n["namn"]: {"lon_per_ar": str(n["lon"]), "lon_per_manad": str(n["lon_manad"]),
+                                 "kostnad_for_bolaget_per_ar": str(n["kostnad"])} for n in rek["nivaer"]}
+    return {"rekommenderad_lagsta_lon": {"rekommenderad": rek["rekommenderad"]["namn"], **rekommenderad},
+            "forutsattningar": {"resultat_fore_lon": str(res), "max_uttag": _s(forut.max_uttag),
                                 "kommunalskatt": str(forut.kommunalskatt), "gransbelopp": str(bast["gransbelopp"]["summa"])},
             "bast": kort(bast), "jamforelse": [kort(a) for a in lu.jamforelse(forut, bast, alla)],
             "lank": f"{WEBB}/lon/lon-och-utdelning/",
