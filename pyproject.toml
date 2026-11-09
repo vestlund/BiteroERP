@@ -4,9 +4,9 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "cryptography>=44",
-    "django>=5.2,<6",
+    "django>=5.2.19,<6",
     "fpdf2>=2.9.0",
-    "markdown>=3.11.2",
+    "markdown>=3.11.3",
     "mcp>=1.10",
     "openpyxl>=3.1.5",
     "pypdf>=6.21.4",
@@ -16,8 +16,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "coverage>=7.17.0",
-    "ruff>=0.17.3",
+    "coverage>=7.17.2",
+    "ruff>=0.17.4",
 ]
 
 [tool.ruff]
