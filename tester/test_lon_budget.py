@@ -97,3 +97,55 @@ class Arbetsdagar(SimpleTestCase):
         self.assertEqual(a[0], 20)    # januari: 22 vardagar minus nyårsdagen och trettondagen
         self.assertEqual(a[11], 20)   # december: 23 vardagar minus julafton, juldagen, nyårsafton
         self.assertEqual(len(a), 12)
+
+
+class IntaktPaArbetsmanad(TestCase):
+    """Kundfakturor räknas i budgetuppföljningen på den månad arbetet avser, inte på fakturadatum."""
+
+    def setUp(self):
+        from .grund import faktura
+        self.kund, _ = grunddata()
+        self.faktura = faktura
+
+    def _bokford(self, fakturadatum, period=""):
+        f = self.faktura(self.kund, fakturadatum=fakturadatum)
+        f.period = period
+        f.save()
+        bok.bokfor_kundfaktura(f)
+        return f
+
+    def test_regler_for_manad(self):
+        from verksamhet.models import Faktura
+        f = Faktura(fakturadatum=datum("2026-11-02"))
+        self.assertEqual(budget.intaktsmanad(f), (2026, 10))
+        f.fakturadatum = datum("2026-11-15")
+        self.assertEqual(budget.intaktsmanad(f), (2026, 10))
+        f.fakturadatum = datum("2026-11-28")
+        self.assertEqual(budget.intaktsmanad(f), (2026, 11))
+        f.fakturadatum = datum("2027-01-05")
+        self.assertEqual(budget.intaktsmanad(f), (2026, 12))
+        f.period = "September 2026"
+        self.assertEqual(budget.intaktsmanad(f), (2026, 9))
+        f.period = "2026-08-01 – 2026-08-31"
+        self.assertEqual(budget.intaktsmanad(f), (2026, 8))
+        self.assertEqual(budget.intaktsmanad(f, {(2026, 6): d("10"), (2026, 7): d("30")}), (2026, 7))
+
+    def test_utfall_per_arbetsmanad(self):
+        from verksamhet.models import Tidpost, Uppdrag
+        self._bokford("2026-11-02")                          # oktober
+        self._bokford("2026-11-20")                          # november
+        self._bokford("2026-11-03", period="Augusti 2026")  # augusti enligt perioden
+        self._bokford("2027-01-04")                          # december 2026
+        self._bokford("2026-01-05")                          # december 2025, inte med 2026
+        f = self._bokford("2026-04-02")
+        u = Uppdrag.objects.create(kund=self.kund, namn="Uppdrag", timpris=d("1000"))
+        Tidpost.objects.create(uppdrag=u, datum=datum("2026-02-27"), timmar=d("8"), fakturarad=f.rader.first())
+        intakter = budget.utfall(2026)["intakter"]
+        self.assertEqual(intakter[9], d("10000.00"))
+        self.assertEqual(intakter[10], d("10000.00"))
+        self.assertEqual(intakter[7], d("10000.00"))
+        self.assertEqual(intakter[11], d("10000.00"))
+        self.assertEqual(intakter[1], d("10000.00"))  # fakturerad tid i februari
+        self.assertEqual(intakter[0] + intakter[2] + intakter[3], 0)
+        self.assertEqual(sum(intakter), d("50000.00"))
+        self.assertEqual(budget.utfall(2025)["intakter"][11], d("10000.00"))

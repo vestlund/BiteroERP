@@ -1,12 +1,14 @@
 import datetime as dt
-from collections import defaultdict
+import re
+from collections import Counter, defaultdict
 from decimal import Decimal
 
 from django.db.models import Sum
 from django.db.models.functions import ExtractMonth
 
 from bokforing.models import Transaktion
-from verksamhet.models import Tidpost, Uppdrag
+from verksamhet.models import Faktura, Tidpost, Uppdrag
+from verksamhet.tjanster import MANADER
 
 from .models import Budgetrad
 
@@ -59,6 +61,52 @@ def arbetsdagar(ar):
 
 # ------------------------------------------------------------------ utfall
 
+# En faktura daterad senast den här dagen i månaden avser normalt föregående månad
+SISTA_DAG_FOR_FORRA_MANADEN = 15
+
+
+def _manad_ur_period(text):
+    """Månad (år, månad) ur fakturans periodtext: "Oktober 2026", "2026-10" eller "2026-10-01 – 2026-10-31"."""
+    text = (text or "").strip().lower()
+    if not text:
+        return None
+    datum = re.findall(r"(\d{4})-(\d{2})(?:-\d{2})?", text)
+    if datum:
+        ar, m = datum[-1]  # vid ett intervall: månaden där perioden slutar
+        return (int(ar), int(m)) if 1 <= int(m) <= 12 else None
+    for i, namn in enumerate(MANADER, start=1):
+        if (hit := re.search(rf"\b{namn}\b\D*(\d{{4}})", text)):
+            return int(hit.group(1)), i
+    return None
+
+
+def intaktsmanad(faktura, tidmanader=None):
+    """Den månad fakturans intäkt hör till i budgetuppföljningen, som (år, månad).
+
+    1. Fakturerad tid: den månad som har flest timmar på fakturan.
+    2. Fakturans period, t.ex. "Oktober 2026".
+    3. Annars fakturadatum: till och med den 15:e räknas föregående månad (arbete faktureras i efterskott).
+    """
+    if tidmanader:
+        return max(tidmanader.items(), key=lambda kv: (kv[1], kv[0]))[0]
+    if manad := _manad_ur_period(faktura.period):
+        return manad
+    d = faktura.fakturadatum
+    if d.day <= SISTA_DAG_FOR_FORRA_MANADEN:
+        forra = d.replace(day=1) - dt.timedelta(days=1)
+        return forra.year, forra.month
+    return d.year, d.month
+
+
+def _intaktsmanader(faktura_ids):
+    """{faktura_id: (år, månad)} för budgetuppföljningen."""
+    tid = defaultdict(Counter)
+    for fid, datum, timmar in Tidpost.objects.filter(fakturarad__faktura_id__in=faktura_ids).values_list(
+            "fakturarad__faktura_id", "datum", "timmar"):
+        tid[fid][(datum.year, datum.month)] += timmar
+    return {f.pk: intaktsmanad(f, tid.get(f.pk)) for f in Faktura.objects.filter(pk__in=faktura_ids)}
+
+
 def utfall(ar):
     """Faktiskt utfall per månad: timmar, upparbetat (tid × pris), bokförda intäkter och kostnader."""
     timmar, upparbetat = [NOLL] * 12, [NOLL] * 12
@@ -71,7 +119,11 @@ def utfall(ar):
             upparbetat[i] += _d(t.timmar * t.uppdrag.pris)
     intakter, kostnader = [NOLL] * 12, [NOLL] * 12
     per_konto = defaultdict(lambda: [NOLL] * 12)
-    qs = Transaktion.objects.filter(verifikation__datum__year=ar, konto__nummer__gte=3000, konto__nummer__lt=9000)
+    # Intäkter från kundfakturor räknas på den månad arbetet avser (se intaktsmanad), övrigt på bokföringsdatum.
+    # Därför tas även fakturor med i början av nästa år (decemberarbete) och lämnas januarifakturor för
+    # förra årets arbete utanför.
+    qs = Transaktion.objects.filter(verifikation__datum__year=ar, konto__nummer__gte=3000, konto__nummer__lt=9000,
+                                    verifikation__kundfaktura__isnull=True)
     for k, m, s in qs.annotate(m=ExtractMonth("verifikation__datum")).values_list("konto", "m").annotate(
             s=Sum("belopp")).values_list("konto", "m", "s"):
         s = _d(s)
@@ -80,6 +132,23 @@ def utfall(ar):
         else:
             kostnader[m - 1] += s
             per_konto[k][m - 1] += s
+    fakturor = defaultdict(lambda: NOLL)
+    for fid, k, s in Transaktion.objects.filter(
+            verifikation__kundfaktura__isnull=False, konto__nummer__gte=3000, konto__nummer__lt=4000,
+            verifikation__datum__gte=dt.date(ar - 1, 1, 1), verifikation__datum__lte=dt.date(ar + 1, 12, 31),
+    ).values_list("verifikation__kundfaktura", "konto").annotate(s=Sum("belopp")).values_list(
+            "verifikation__kundfaktura", "konto", "s"):
+        fakturor[fid] += _d(s)
+    for fid, (f_ar, m) in _intaktsmanader(list(fakturor)).items():
+        if f_ar == ar:
+            intakter[m - 1] -= fakturor[fid]
+    # Kostnadskonton (4000–8999) på kundfakturaverifikationer är ovanliga men räknas på bokföringsdatum
+    for k, m, s in Transaktion.objects.filter(
+            verifikation__datum__year=ar, verifikation__kundfaktura__isnull=False, konto__nummer__gte=4000,
+            konto__nummer__lt=9000).annotate(m=ExtractMonth("verifikation__datum")).values_list("konto", "m").annotate(
+            s=Sum("belopp")).values_list("konto", "m", "s"):
+        kostnader[m - 1] += _d(s)
+        per_konto[k][m - 1] += _d(s)
     return {"timmar": timmar, "upparbetat": upparbetat, "intakter": intakter, "kostnader": kostnader,
             "per_konto": dict(per_konto), "tim_per_uppdrag": dict(tim_per_uppdrag)}
 

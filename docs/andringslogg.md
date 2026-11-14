@@ -3,6 +3,14 @@
 Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
 fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
 
+## 2026.11.14-1
+
+- Budgetuppföljningen räknar intäkter från kundfakturor på den månad arbetet avser i stället för på
+  fakturadatum. Månaden bestäms av den fakturerade tiden (månaden med flest timmar), annars fakturans period
+  (t.ex. "Oktober 2026"), annars fakturadatum där fakturor daterade till och med den 15:e räknas på
+  föregående månad. En faktura daterad 2 november hamnar alltså i oktober, och decemberarbete som faktureras
+  i januari hamnar i december förra året. Bokföringen och rapporterna påverkas inte.
+
 ## 2026.11.03-5
 
 - Lön eller utdelning: lägsta lön kan väljas i en lista, full SGI (592 000 kr/år) eller full allmän pension

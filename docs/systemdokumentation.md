@@ -33,7 +33,9 @@ Bitero ERP är ett lokalt affärssystem som körs på företagets bärbara dator
 - **Bank:** import av kontoutdrag (CSV, camt.053/054) och avstämning.
 - **Bokföring:** verifikationer, rättelser, huvudbok, resultat- och balansrapport, momsrapport, SIE.
 - **Lön:** anställda, lönekörningar, lönespecifikationer, underlag till arbetsgivardeklaration.
-- **Budget och prognos.**
+- **Budget och prognos.** I budgetuppföljningen räknas kundfakturor på den månad arbetet avser
+  (`budget.tjanster.intaktsmanad`): fakturerad tid, annars fakturans period, annars föregående månad om
+  fakturadatum är senast den 15:e. Övriga intäkter och kostnader räknas på bokföringsdatum.
 - **Behandlingshistorik** och systemversioner (avsnitt 7).
 
 ### Samverkan med Visma
