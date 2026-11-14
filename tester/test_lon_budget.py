@@ -149,3 +149,22 @@ class IntaktPaArbetsmanad(TestCase):
         self.assertEqual(intakter[0] + intakter[2] + intakter[3], 0)
         self.assertEqual(sum(intakter), d("50000.00"))
         self.assertEqual(budget.utfall(2025)["intakter"][11], d("10000.00"))
+
+    def test_visma_fakturor_och_periodiseringar(self):
+        """Fakturor importerade från Visma kopplas via texten, och upplupna intäkter räknas inte dubbelt."""
+        from register.models import Konto
+        from verksamhet.models import Faktura
+        Konto.objects.create(nummer=1790, namn="Upplupna intäkter", aktiv=True)
+        f = Faktura.objects.create(kund=self.kund, fakturadatum=datum("2026-01-02"), fran_visma=True)
+        f.nummer = 165
+        f.save()
+        bok.bokfor(datum("2025-12-31"), "Upplupen intäkt december (Visma A90)", [(1790, d("100000")), (3041, d("-100000"))])
+        bok.bokfor(datum("2026-01-01"), "Åter upplupen intäkt (Visma A32)", [(3041, d("100000")), (1790, d("-100000"))])
+        bok.bokfor(datum("2026-01-02"), "Kundfaktura till 3 Kund AB, 165 (Visma A6)",
+                   [(1510, d("125000")), (3041, d("-100000")), (2611, d("-25000"))])
+        bok.bokfor(datum("2026-03-03"), "Kundfaktura till 3 Kund AB, 168 (Visma A35)",
+                   [(1510, d("12500")), (3041, d("-10000")), (2611, d("-2500"))])  # ingen faktura i registret
+        self.assertEqual(budget.utfall(2025)["intakter"][11], d("100000.00"))
+        u = budget.utfall(2026)["intakter"]
+        self.assertEqual(u[0], 0)
+        self.assertEqual(u[2], d("10000.00"))  # okänd faktura: bokföringsdatum

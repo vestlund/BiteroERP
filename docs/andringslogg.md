@@ -3,6 +3,13 @@
 Varje version registreras automatiskt i behandlingshistoriken när den startas första gången, med
 fingeravtryck och lista över ändrade filer. Här beskrivs vad ändringarna innebär.
 
+## 2026.11.14-2
+
+- Budgetuppföljningen känner igen kundfakturor som bokförts i Visma (texten "Kundfaktura till …, 165") och
+  räknar dem på arbetsmånaden på samma sätt som fakturor från det här systemet.
+- Periodiseringar av upplupna intäkter (konto 17xx) räknas inte i uppföljningen, eftersom fakturan redan
+  hamnar på rätt månad. Annars skulle intäkten räknas två gånger.
+
 ## 2026.11.14-1
 
 - Budgetuppföljningen räknar intäkter från kundfakturor på den månad arbetet avser i stället för på

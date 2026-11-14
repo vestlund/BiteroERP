@@ -98,6 +98,17 @@ def intaktsmanad(faktura, tidmanader=None):
     return d.year, d.month
 
 
+def _vismafaktura(text):
+    """Fakturanummer ur Vismas text 'Kundfaktura till 3 Kund AB, 165 (Visma A6)', annars None."""
+    from bokforing.fakturaimport import visma_text
+    text = re.sub(r"\s*\(Visma [^)]*\)\s*$", "", text or "")
+    if not re.match(r"\s*(kund|kredit)faktura till", text, re.I):
+        return None
+    tolkad = visma_text(text)
+    nr = re.sub(r"\D", "", tolkad[2]) if tolkad else ""
+    return int(nr) if nr else None
+
+
 def _intaktsmanader(faktura_ids):
     """{faktura_id: (år, månad)} för budgetuppföljningen."""
     tid = defaultdict(Counter)
@@ -122,32 +133,37 @@ def utfall(ar):
     # Intäkter från kundfakturor räknas på den månad arbetet avser (se intaktsmanad), övrigt på bokföringsdatum.
     # Därför tas även fakturor med i början av nästa år (decemberarbete) och lämnas januarifakturor för
     # förra årets arbete utanför.
-    qs = Transaktion.objects.filter(verifikation__datum__year=ar, konto__nummer__gte=3000, konto__nummer__lt=9000,
-                                    verifikation__kundfaktura__isnull=True)
-    for k, m, s in qs.annotate(m=ExtractMonth("verifikation__datum")).values_list("konto", "m").annotate(
-            s=Sum("belopp")).values_list("konto", "m", "s"):
-        s = _d(s)
-        if k < 4000:
-            intakter[m - 1] -= s
-        else:
-            kostnader[m - 1] += s
-            per_konto[k][m - 1] += s
-    fakturor = defaultdict(lambda: NOLL)
-    for fid, s in Transaktion.objects.filter(
-            verifikation__kundfaktura__isnull=False, konto__nummer__gte=3000, konto__nummer__lt=4000,
-            verifikation__datum__gte=dt.date(ar - 1, 1, 1), verifikation__datum__lte=dt.date(ar + 1, 12, 31),
-    ).values_list("verifikation__kundfaktura").annotate(s=Sum("belopp")).values_list("verifikation__kundfaktura", "s"):
-        fakturor[fid] += _d(s)
-    for fid, (f_ar, m) in _intaktsmanader(list(fakturor)).items():
-        if f_ar == ar:
-            intakter[m - 1] -= fakturor[fid]
-    # Kostnadskonton (4000–8999) på kundfakturaverifikationer är ovanliga men räknas på bokföringsdatum
-    for k, m, s in Transaktion.objects.filter(
-            verifikation__datum__year=ar, verifikation__kundfaktura__isnull=False, konto__nummer__gte=4000,
-            konto__nummer__lt=9000).annotate(m=ExtractMonth("verifikation__datum")).values_list("konto", "m").annotate(
+    kostnad_qs = Transaktion.objects.filter(verifikation__datum__year=ar, konto__nummer__gte=4000,
+                                            konto__nummer__lt=9000)
+    for k, m, s in kostnad_qs.annotate(m=ExtractMonth("verifikation__datum")).values_list("konto", "m").annotate(
             s=Sum("belopp")).values_list("konto", "m", "s"):
         kostnader[m - 1] += _d(s)
         per_konto[k][m - 1] += _d(s)
+
+    per_ver = {}
+    for vid, datum, text, fid, s in Transaktion.objects.filter(
+            konto__nummer__gte=3000, konto__nummer__lt=4000,
+            verifikation__datum__gte=dt.date(ar - 1, 1, 1), verifikation__datum__lte=dt.date(ar + 1, 12, 31),
+    ).values_list("verifikation", "verifikation__datum", "verifikation__text", "verifikation__kundfaktura", "belopp"):
+        v = per_ver.setdefault(vid, {"datum": datum, "text": text, "faktura": fid, "belopp": NOLL})
+        v["belopp"] += _d(s)
+    utan_faktura = [vid for vid, v in per_ver.items() if not v["faktura"]]
+    periodiseringar = set(Transaktion.objects.filter(
+        verifikation__in=utan_faktura, konto__nummer__gte=1700, konto__nummer__lt=1800).values_list(
+        "verifikation", flat=True))
+    nummer = dict(Faktura.objects.filter(nummer__isnull=False).values_list("nummer", "pk"))
+    fakturor = defaultdict(lambda: NOLL)
+    for vid, v in per_ver.items():
+        fid = v["faktura"] or nummer.get(_vismafaktura(v["text"]))
+        if fid:
+            fakturor[fid] += v["belopp"]
+        elif vid in periodiseringar:
+            continue  # upplupen intäkt och återföring: fakturan räknas redan på arbetsmånaden
+        elif v["datum"].year == ar:
+            intakter[v["datum"].month - 1] -= v["belopp"]
+    for fid, (f_ar, m) in _intaktsmanader(list(fakturor)).items():
+        if f_ar == ar:
+            intakter[m - 1] -= fakturor[fid]
     return {"timmar": timmar, "upparbetat": upparbetat, "intakter": intakter, "kostnader": kostnader,
             "per_konto": dict(per_konto), "tim_per_uppdrag": dict(tim_per_uppdrag)}
 
