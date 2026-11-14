@@ -133,11 +133,10 @@ def utfall(ar):
             kostnader[m - 1] += s
             per_konto[k][m - 1] += s
     fakturor = defaultdict(lambda: NOLL)
-    for fid, k, s in Transaktion.objects.filter(
+    for fid, s in Transaktion.objects.filter(
             verifikation__kundfaktura__isnull=False, konto__nummer__gte=3000, konto__nummer__lt=4000,
             verifikation__datum__gte=dt.date(ar - 1, 1, 1), verifikation__datum__lte=dt.date(ar + 1, 12, 31),
-    ).values_list("verifikation__kundfaktura", "konto").annotate(s=Sum("belopp")).values_list(
-            "verifikation__kundfaktura", "konto", "s"):
+    ).values_list("verifikation__kundfaktura").annotate(s=Sum("belopp")).values_list("verifikation__kundfaktura", "s"):
         fakturor[fid] += _d(s)
     for fid, (f_ar, m) in _intaktsmanader(list(fakturor)).items():
         if f_ar == ar:
